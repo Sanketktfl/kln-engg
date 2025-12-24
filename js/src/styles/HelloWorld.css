@@ -1,0 +1,532 @@
+/* ======================================================
+   🌤️ HELLOWORLD DASHBOARD - SOFT FORMAL THEME (15% LARGER EDITION)
+   ====================================================== */
+
+/* ---------- GLOBAL ---------- */
+.hw-app {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #f9fafb 0%, #eef2f7 100%);
+  color: #111827;
+  font-family: "Inter", "Segoe UI", "SF Pro Display", Roboto, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 2.3rem;
+  font-size: 1.25rem; /* ↑ bigger base font */
+}
+
+.hw-shell {
+  min-height: calc(100vh - 4rem);
+  width: 100%;
+  max-width: 1920px;
+  display: flex;
+  flex-direction: column;
+  gap: 2.2rem;
+}
+
+/* ---------- HEADER ---------- */
+.hw-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(14px);
+  padding: 2.3rem 2.8rem;
+  border-radius: 20px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.hw-title {
+  font-size: 2.5rem; /* ↑ bigger */
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.hw-subtitle {
+  font-size: 1.25rem; /* ↑ bigger */
+  color: #6b7280;
+  margin-top: 0.4rem;
+}
+
+.hw-header-right {
+  display: flex;
+  align-items: flex-end;
+  gap: 2rem;
+}
+
+.hw-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hw-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  font-size: 1.25rem; /* ↑ bigger */
+  transition: all 0.2s ease;
+}
+
+.hw-btn:hover {
+  opacity: 0.9;
+}
+
+.hw-btn-danger {
+  background: #ef4444;
+  color: white;
+}
+
+.hw-btn-ghost {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #374151;
+}
+
+.hw-btn-muted {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ---------- FILTERS ---------- */
+.card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(14px);
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  padding: 2.3rem 2.6rem;
+  border: 1px solid #e5e7eb;
+}
+
+.hw-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 1.25rem;
+}
+
+.hw-input,
+.hw-select {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.8rem 1.1rem;
+  font-size: 1.25rem;
+  background: #f9fafb;
+  color: #111827;
+}
+
+.hw-date-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.hw-date-sep {
+  color: #6b7280;
+  font-size: 1.2rem;
+}
+
+/* ---------- PLANTS GRID ---------- */
+.hw-plants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 1.2rem;
+}
+
+@media (min-width: 1200px) {
+  .hw-plants-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.hw-plant-card {
+  background: linear-gradient(145deg, #ffffff, #f3f4f6);
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 1.6rem 2rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.hw-plant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.1);
+}
+
+.hw-plant-card.selected {
+  border: 2px solid #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25);
+}
+
+.hw-plant-title {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.hw-plant-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.hw-stat-label {
+  font-size: 1.15rem;
+  color: #6b7280;
+}
+
+.hw-stat-value {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.hw-plant-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.2rem;
+  font-size: 1.15rem;
+  color: #6b7280;
+}
+
+/* ---------- KPI CARDS (FIX: KEEP ALL 4 INLINE) ---------- */
+.hw-kpis {
+  display: flex;                   /* ✅ force a single row */
+  justify-content: space-between;  /* evenly space the 4 cards */
+  align-items: stretch;
+  flex-wrap: nowrap;               /* ✅ prevent wrapping */
+  gap: 1.5rem;
+  width: 100%;
+  overflow-x: auto;                /* ✅ enables scroll if window too narrow */
+  padding-bottom: 0.3rem;
+}
+
+.hw-kpi-card {
+  flex: 1 1 22%;                   /* ✅ 4 cards share width evenly */
+  min-width: 250px;                /* prevents cards from shrinking too much */
+  background: linear-gradient(145deg, #ffffff, #f3f4f6);
+  border-radius: 16px;
+  padding: 1.6rem 2.3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+  transition: transform 0.2s ease;
+}
+
+.hw-kpi-card:hover {
+  transform: translateY(-4px);
+}
+
+.hw-kpi-label {
+  color: #6b7280;
+  font-size: 1.2rem;
+}
+
+.hw-kpi-value {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.hw-kpi-icon {
+  font-size: 2.3rem;
+  color: #2563eb;
+}
+
+/* ---------- SECTION HEADERS ---------- */
+.hw-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+
+.hw-section-head h3 {
+  font-size: 1.75rem;
+  color: #1f2937;
+}
+
+.hw-sub {
+  font-size: 1.2rem;
+  color: #6b7280;
+}
+
+/* ---------- CHART AREA ---------- */
+.hw-chart-area {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.8rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* ---------- TABLES ---------- */
+.hw-table {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1.2rem;
+}
+
+.hw-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hw-table th {
+  background: #f3f4f6;
+  padding: 1.15rem;
+  font-size: 1.25rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.hw-table td {
+  padding: 1.15rem;
+  font-size: 1.25rem;
+  border-bottom: 1px solid #f1f2f3;
+}
+
+.hw-table tr:hover {
+  background: #f9fafb;
+}
+
+/* ---------- MODALS ---------- */
+.hw-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(17, 24, 39, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.hw-modal {
+  background: linear-gradient(160deg, #ffffff, #f8fafc);
+  border-radius: 18px;
+  max-width: 90%;
+  width: 1150px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 2.3rem 2.6rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e5e7eb;
+}
+
+.hw-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.6rem;
+}
+
+.hw-modal-head h2 {
+  font-size: 1.8rem;
+  color: #111827;
+}
+
+.hw-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 2.3rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.hw-modal-body {
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+/* ---------- BADGES ---------- */
+.hw-badge,
+.hw-badge-small {
+  font-size: 1.15rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 500;
+  display: inline-block;
+  color: white;
+}
+
+.hw-badge.good,
+.hw-badge-small.good {
+  background: #10b981;
+}
+
+.hw-badge.warn,
+.hw-badge-small.warn {
+  background: #f59e0b;
+}
+
+.hw-badge.crit,
+.hw-badge-small.crit {
+  background: #ef4444;
+}
+
+/* ---------- RESPONSIVENESS ---------- */
+@media (max-width: 1024px) {
+  .hw-title {
+    font-size: 2.1rem;
+  }
+  .hw-kpi-value {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hw-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.4rem;
+  }
+}
+
+/* ---------- PLANT OVERVIEW HEADER ---------- */
+.hw-plant-overview {
+  position: relative;
+}
+
+.hw-plant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.hw-clear-btn {
+  padding: 0.7rem 1.2rem;
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hw-clear-btn:hover {
+  background: #e5e7eb;
+}
+/* ---------- FIXED: KEEP STATS INLINE ALWAYS ---------- */
+.hw-plant-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* ✅ exactly 2 equal columns */
+  align-items: start;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.hw-plant-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  white-space: nowrap; /* ✅ prevents line breaks */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hw-stat-label {
+  font-size: 1.1rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.hw-stat-value {
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hw-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+/* Clear Filters Button Styling */
+.hw-clear-filter {
+  align-self: flex-end;
+  height: 38px;
+  padding: 0 1rem;
+  margin-top: 1.4rem;
+  background: #f9fafb;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  font-size: 1rem;
+}
+
+.hw-clear-filter:hover {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+/* ---------- NON-SCROLL & VIEW TRANSITIONS ---------- */
+.no-scroll {
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.hw-view-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s ease;
+}
+
+.fade {
+  animation: fadeIn 0.6s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- NEXT BUTTON ---------- */
+.hw-next-btn {
+  position: fixed;
+  top: 50%;
+  right: 40px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, var(--hw-accent1), var(--hw-accent2));
+  color: #111;
+  border: none;
+  border-radius: 50px;
+  padding: 0.8rem 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 0 20px var(--hw-glow);
+  transition: all 0.3s ease;
+}
+
+.hw-next-btn:hover {
+  box-shadow: 0 0 35px var(--hw-glow);
+  transform: translateY(-50%) scale(1.05);
+}
