@@ -55,7 +55,7 @@ class YieldDashboardYearlyData:
         end_year = current_year
 
         sqldata=f"""SELECT SUM(total_order_qty) as total_order_qty,
-                SUM(totalDies) as totaldies,
+                SUM(totaldies) as totaldies,
                 SUM(total_tonnage) as total_tonnage,
                 (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
                 year
@@ -96,7 +96,7 @@ class YieldDashboardMonthlyData:
 
         sqldata="SELECT plant_code,total_order_qty,total_tonnage,yield_pct,year_month FROM prodd_yield_month_agg WHERE 1=1 "
         if filters.get('year'):
-            sqldata += f""" AND STRFTIME('%Y', year_month) = '{filters.get('year')}'"""
+            sqldata += f""" AND LEFT(year_month,4) = '{filters.get('year')}'"""
         if filters.get('plant_code'):
             sqldata += f""" AND plant_code = '{filters.get('plant_code')}'"""
         recordset=sqlapi.RecordSet2(sql=sqldata)
@@ -132,9 +132,9 @@ class YieldDashboardDieData:
 
         sqldata="SELECT plant_code,pre_die_no,total_order_qty,total_tonnage,yield_pct,family,year_month FROM prodd_yield_die_agg WHERE 1=1 "
         if filters.get('year'):
-            sqldata += f""" AND STRFTIME('%Y', year_month) = '{filters['year']}'"""
+            sqldata += f""" AND LEFT(year_month,4) = '{filters['year']}'"""
         if filters.get('month'):
-            sqldata += f"""AND STRFTIME('%',year_month) = '{filters['month']}'"""
+            sqldata += f""" AND RIGHT(year_month,2) = '{filters['month'].zfill(2)}'"""
         recordset=sqlapi.RecordSet2(sql=sqldata)
         data = []
         for record in recordset:
@@ -166,11 +166,13 @@ def _mount_app():
 class YieldDashboardFamData:
     def yearly_yieldfam(self,filters=None):
 
-        sqldata="SELECT plant_code,total_order_qty,total_tonnage,yield_pct,family,year,totaldies FROM prodd_yield_fam_year_agg"
+        sqldata="SELECT plant_code,total_order_qty,total_tonnage,yield_pct,family,year_month,totaldies FROM prodd_yield_fam_mnth_agg WHERE 1=1 "
         if filters.get('plant_code'):
-            sqldata += f""" WHERE plant_code = '{filters['plant_code']}'"""
-        # if filters.get('year'):
-        #     sqldata += f"""AND STRFTIME('%Y', year) = '{filters['year']}'"""
+            sqldata += f""" AND plant_code = {filters['plant_code']}"""
+        if filters.get('year'):
+            sqldata += f"""AND LEFT(year_month,4) = {filters['year']}"""
+        if filters.get('month'):
+            sqldata += f"""AND RIGHT(year_month,2) = '{filters['month'].zfill(2)}'"""
         recordset=sqlapi.RecordSet2(sql=sqldata)
         data = []
         for record in recordset:
@@ -187,6 +189,10 @@ def _json(model, request):
     filters = {}
     if request.params.get('plant_code'):
         filters['plant_code'] = request.params.get('plant_code')
+    if request.params.get('year'):
+        filters['year'] = request.params.get('year')
+    if request.params.get('month'):
+        filters['month'] = request.params.get('month')
     return model.yearly_yieldfam(filters)
 
 

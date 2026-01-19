@@ -23,7 +23,7 @@ const DieWeightBar = () => {
           `die_number eq '${dieInput.trim()}'`
         );
 
-        const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
+        const url = `https://ktfrancesrv2.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
         const resp = await fetch(url);
         const data = await resp.json();
 
@@ -57,7 +57,8 @@ const DieWeightBar = () => {
     { label: "Net Weight", key: "net_wt" },
     { label: "Gross Weight", key: "gross_wt" },
     { label: "Flash Slug Weight", key: "flash_slug_wt" },
-    { label: "Machining Weight", key: "machining_wt" }
+    { label: "Machining Weight", key: "machining_wt" },
+    { label: "End PC Weight", key: "endpc_wt" }
   ];
   const weightValues = labels.map(
     (item) => Number(weights?.[item.key] ?? 0)

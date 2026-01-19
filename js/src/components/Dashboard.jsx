@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import DieWeightBar from "./DieWeightBar";
+import MasterDataPopup from "./MasterDataPopup";
 
 import {
   Line,
@@ -40,12 +41,8 @@ const Dashboard = () => {
   const [weightDetails, setWeightDetails] = useState([]);
   const [wtLoading, setWtLoading] = useState(false);
   const [showMasterPopup, setShowMasterPopup] = useState(false);
-  const [masterTab, setMasterTab] = useState("edit"); // "edit" | "create"
-  const [masterSearchNo, setMasterSearchNo] = useState("");
-  const [masterResult, setMasterResult] = useState(null);
-  const [masterLoading, setMasterLoading] = useState(false);
-  const [masterError, setMasterError] = useState("");
-  const [masterRaw, setMasterRaw] = useState(null);
+  const [plantTargets, setPlantTargets] = useState({});
+
 
 const [familyYear, setFamilyYear] = useState(new Date().getFullYear());
 const [familyMonth, setFamilyMonth] = useState(
@@ -55,8 +52,6 @@ const [dieYear, setDieYear] = useState(new Date().getFullYear());
 const [dieMonth, setDieMonth] = useState(
   String(new Date().getMonth() + 1).padStart(2, "0")
 );
-
-
 
 
 const PLANT_MAP = {
@@ -72,11 +67,16 @@ const PLANT_REVERSE = {
   R1: 7026,
   Baramati: 7028
 };
+const normalizeFamily = (family) => {
+  if (!family || String(family).trim() === "") {
+    return "Other";
+  }
+  return family.trim();
+};
 
-const HalfDonut = ({ value, label }) => {
+const HalfDonut = ({ value, label, target }) => {
   const progress = Math.min(Math.max(Number(value) || 0, 0), 100);
-  const TARGET = 85;
-
+  const TARGET = target || 0;
   const radius = 45;
   const cx = 60;
   const cy = 60;
@@ -155,7 +155,7 @@ const HalfDonut = ({ value, label }) => {
           fill="#0ea5e9"
           fontWeight="600"
         >
-          Target 85%
+          Target {TARGET}%
         </text>
 
         {/* Plant label */}
@@ -174,259 +174,11 @@ const HalfDonut = ({ value, label }) => {
   );
 };
 
-const [createForm, setCreateForm] = useState({
-  die_number: "",
-  plant_code: "",
-  customer_name: "",
-  part_name: "",
-  r_code: "",
-  forge_press: "",
-  rm_grade: "",
-  rm_section: "",
-  rm_rate_kg: "",
-  cut_wt: "",
-  burr_wt: "",
-  flash_slug_wt: "",
-  endpc_wt: "",
-  gross_wt: "",
-  net_wt: "",
-  machining_wt: "",
-  cycle_time: "",
-  forge_price: "",
-  forge_scrap_price: "",
-  currency: "",
-  country: "",
-  kam: "",
-});
-
-const editFieldOrder = [
-  "die_number",
-  "plant_code",
-  "customer_name",
-  "part_name",
-  "r_code",
-  "forge_press",
-  "rm_grade",
-  "rm_section",
-  "rm_rate_kg",
-  "cut_wt",
-  "burr_wt",
-  "flash_slug_wt",
-  "endpc_wt",
-  "gross_wt",
-  "net_wt",
-  "machining_wt",
-  "cycle_time",
-  "forge_price",
-  "forge_scrap_price",
-  "currency",
-  "country",
-  "kam"
-];
-
 
 // 🔥 Selected die details FROM Die-wise tab (single record)
 const selectedDieFromDieTab = selectedDie
   ? dieApiData.find((d) => d.die_no === selectedDie)
   : null;
-
-const fetchMasterRecord = async () => {
-  if (!masterSearchNo.trim()) {
-    setMasterError("Enter a die number");
-    return;
-  }
-
-  setMasterLoading(true);
-  setMasterError("");
-
-  try {
-    const filter = encodeURIComponent(`die_number eq '${masterSearchNo}'`);
-    const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
-
-    const resp = await fetch(url);
-    const data = await resp.json();
-
-    if (!data.objects || data.objects.length === 0) {
-      setMasterError("No record found");
-      setMasterResult(null);
-      return;
-    }
-
-    const raw = data.objects[0];                     // keep original
-    const cleaned = Object.fromEntries(             // cleaned for UI
-      Object.entries(raw).filter(
-        ([key]) =>
-          !key.startsWith("@") &&
-          !key.startsWith("system:")
-      )
-    );
-
-    setMasterRaw(raw);       // 🔥 RAW contains @id for PATCH
-    setMasterResult(cleaned);
-
-  } catch (err) {
-    console.error("Master fetch error:", err);
-    setMasterError("Failed to load data");
-  } finally {
-    setMasterLoading(false);
-  }
-};
-
-const numericFields = [
-  "cut_wt",
-  "burr_wt",
-  "flash_slug_wt",
-  "endpc_wt",
-  "gross_wt",
-  "net_wt",
-  "rm_rate_kg",
-  "rm_section",
-  "forge_price",
-  "forge_scrap_price",
-  "cycle_time",
-  "plant_code",
-  "cut_length",
-  "ht_cycle"
-];
-const updateMasterRecord = async () => {
-  if (!masterRaw || !masterRaw["@id"]) {
-    alert("No valid record to update");
-    return;
-  }
-
-  const url = masterRaw["@id"];
-
-  // convert string numbers → real numbers
-  const payload = { ...masterResult };
-
-  numericFields.forEach((field) => {
-    if (payload[field] !== undefined && payload[field] !== "") {
-      payload[field] = Number(payload[field]);
-    }
-  });
-
-  try {
-      const authOptions = await getAuthHeadersWithCSRF("POST");
-    const resp = await fetch(url, {
-      method: "PUT",
-      ...authOptions,
-      body: JSON.stringify(payload),
-    });
-
-    if (!resp.ok) throw new Error("Update failed");
-
-    alert("Master Data Updated Successfully!");
-
-    // CLEAR FORM BUT KEEP POPUP OPEN
-    setMasterResult(null);     // empty UI form
-    setMasterRaw(null);        // clear raw
-    setMasterSearchNo("");     // clear search box
-
-  } catch (err) {
-    console.error("Update error:", err);
-    alert("Failed to update master data");
-  }
-};
-
-const getAuthHeadersWithCSRF = async (method = "GET", contentType = true) => {
-  const credentials = btoa("kalyaniadmin:kalyaniadmin@7001");
-  // Step 1: Trigger cookie set
-  await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data", {
-    method: "GET",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-    },
-    credentials: "include",
-  });
-
-  const csrfToken = getCookie("CSRFToken");
-  console.log("Fetched CSRF Token from cookie:", csrfToken);
-  if (!csrfToken) {
-    throw new Error("CSRF token not found in cookies.");
-  }
-
-  const headers = {
-    Authorization: `Basic ${credentials}`,
-    "X-CSRF-Token": csrfToken,
-  };
-
-  if (contentType) {
-    headers["Content-Type"] = "application/json";
-  }
-
-  return {
-    headers,
-    credentials: "include",
-  };
-};
-
-const createMasterRecord = async () => {
-  const payload = { ...createForm };
-
-  // 1️⃣ Convert empty strings → null
-  Object.keys(payload).forEach(key => {
-    if (payload[key] === "" || payload[key] === undefined) {
-      payload[key] = null;
-    }
-  });
-
-  // 2️⃣ Convert numeric fields into numbers
-  numericFields.forEach(field => {
-    if (payload[field] !== null) {
-      payload[field] = Number(payload[field]);
-    }
-  });
-
-  try {
-      const authOptions = await getAuthHeadersWithCSRF("POST");
-    const resp = await fetch(
-      "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data",
-      {
-        method: "POST",
-        ...authOptions,
-        body: JSON.stringify(payload),
-      }
-    );
-
-    if (!resp.ok) throw new Error("Create failed");
-
-    alert("Master Data Created Successfully!");
-
-    // 🔥 Reset form EXACTLY like EDIT reset
-    setCreateForm({
-      die_number: "",
-      plant_code: "",
-      customer_name: "",
-      part_name: "",
-      r_code: "",
-      forge_press: "",
-      rm_grade: "",
-      rm_section: "",
-      rm_rate_kg: "",
-      cut_wt: "",
-      burr_wt: "",
-      flash_slug_wt: "",
-      endpc_wt: "",
-      gross_wt: "",
-      net_wt: "",
-      machining_wt: "",
-      cycle_time: "",
-      forge_price: "",
-      forge_scrap_price: "",
-      currency: "",
-      country: "",
-      kam: "",
-    });
-
-    // 👇 keep popup open, do NOT close
-    // setShowMasterPopup(false);  // ❌ DO NOT USE
-
-  } catch (err) {
-    console.error("Create error:", err);
-    alert("Failed to create master data");
-  }
-};
-
 
 useEffect(() => {
   if (activeTab !== "family") return;
@@ -435,20 +187,47 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";
 
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_fam?year=${familyYear}&month=${familyMonth}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_fam?year=${familyYear}&month=${familyMonth}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
 
-      const formatted = data.map(item => ({
-        family: item.family?.trim() || "No Family",
-        avgYield: item.yield_pct ?? 0,
-        totalTonnage: item.total_tonnage ?? 0,
-        totalOrders: item.total_order_qty ?? 0,
-        totalDies: item.totaldies ?? 0
-      }));
+      const familyMap = {};
 
-      setFamilyApiData(formatted);
+    data.forEach(item => {
+      const family = normalizeFamily(item.family);
+
+      if (!familyMap[family]) {
+        familyMap[family] = {
+          family,
+          totalTonnage: 0,
+          totalOrders: 0,
+          totalDies: 0,
+          yieldSum: 0,
+          yieldCount: 0
+        };
+      }
+
+      familyMap[family].totalTonnage += item.total_tonnage ?? 0;
+      familyMap[family].totalOrders += item.total_order_qty ?? 0;
+      familyMap[family].totalDies += item.totaldies ?? 0;
+
+      if (item.yield_pct !== null && item.yield_pct !== undefined) {
+        familyMap[family].yieldSum += item.yield_pct;
+        familyMap[family].yieldCount += 1;
+      }
+    });
+
+    const aggregated = Object.values(familyMap).map(f => ({
+      family: f.family,
+      avgYield: f.yieldCount ? f.yieldSum / f.yieldCount : 0,
+      totalTonnage: f.totalTonnage,
+      totalOrders: f.totalOrders,
+      totalDies: f.totalDies
+    }));
+
+    setFamilyApiData(aggregated);
+
     } catch (err) {
       console.error("❌ Family API error:", err);
       setFamilyApiData([]);
@@ -458,6 +237,25 @@ useEffect(() => {
   fetchFamilyData();
 }, [activeTab, familyYear, familyMonth, activePlant]);
 
+useEffect(() => {
+  const fetchTargets = async () => {
+    try {
+      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
+      const data = await resp.json();
+
+      const map = {};
+      data.objects.forEach(o => {
+        map[o.plant_code] = o.yield_target;
+      });
+
+      setPlantTargets(map);   // {2101: 82.5, 7027: 82.6, ...}
+    } catch (e) {
+      console.error("Target load failed", e);
+    }
+  };
+
+  fetchTargets();
+}, []);
 
 
 
@@ -469,7 +267,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";
 
       const url =
-        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die` +
+        `http://localhost:8080/internal/yield_dashboard_die` +
         `?year=${dieYear}&month=${dieMonth}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
@@ -477,10 +275,7 @@ useEffect(() => {
 
       const formatted = data.map(item => ({
           die_no: item.pre_die_no,
-          family:
-            item.family && item.family.trim() !== ""
-              ? item.family.trim()
-              : "No Family",
+          family: normalizeFamily(item.family),
           percent_yield: item.yield_pct ?? 0,
           tonnage: item.total_tonnage ?? 0,
           orders: item.total_order_qty ?? 0,
@@ -524,7 +319,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ? activePlant : "";
       const resp = await fetch(
-        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_yearly?plant_code=${plantCode}`
+        `http://localhost:8080/internal/yield_dashboard_yearly?plant_code=${plantCode}`
       );
 
       const data = await resp.json();
@@ -557,14 +352,14 @@ useEffect(() => {
       // plant_code logic
       const plantCode = activePlant ?? "";
 
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${selectedYear}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${selectedYear}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
 
       const formattedDieData = data.map(item => ({
         die_no: item.pre_die_no,
-        family: item.family?.trim() || "No Family",
+        family: normalizeFamily(item.family),
         plant:
           item.plant_code === 2101 ? "R2" :
           item.plant_code === 7001 ? "Mundhwa" :
@@ -606,7 +401,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";   // numeric or empty
 
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly?year=${selectedYear}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${selectedYear}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -641,7 +436,7 @@ const fetchDieWeightDetails = async () => {
 
   try {
     const resp = await fetch(
-      `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_wt?die_number=${weightDieNo}`
+      `http://localhost:8080/internal/yield_dashboard_wt?die_number=${weightDieNo}`
     );
 
     if (!resp.ok) throw new Error("API failed");
@@ -672,7 +467,7 @@ const fetchDieWeightDetails = async () => {
 useEffect(() => {
   const fetchYearWiseData = async () => {
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/internal/yield_dashboard");
+      const resp = await fetch("http://localhost:8080/internal/yield_dashboard");
       const result = await resp.json();
 
       // Fix null year to 2024
@@ -744,7 +539,8 @@ const dataToUse = activePlant
 const COLORS = {
   Gear: "#8b5cf6",
   Sleeve: "#10b981",
-  "Yoke Shaft": "#6366f1",
+  "Yoke Shaft": "#38bdf8",
+  Other: "#64748b",
 };
 
 // Prepare Family-wise data for month analysis
@@ -756,7 +552,7 @@ if (showMonthlyPopup && selectedYear && selectedMonth) {
   // Group data by family
   const familyTotals = {};
   currentDieData.forEach(item => {
-    const fam = item.family?.trim() ? item.family : "No Family";
+    const fam = normalizeFamily(item.family);
 
     if (!familyTotals[fam]) {
       familyTotals[fam] = {
@@ -834,7 +630,8 @@ const tonnageData = yearlyChartData.map(item => item.tonnage);
 
 const yearwiseHighchartOptions = {
   chart: {
-    zooming: { type: "xy" }
+    zooming: { type: "xy" },
+    height: 480
   },
 
 title: {
@@ -850,13 +647,13 @@ xAxis: [{
 
 yAxis: [
   {
-    labels: { format: "{value}%", style: { color: "#10b981", fontSize: "13px" } },
-    title: { text: "Yield (%)", style: { color: "#10b981", fontSize: "14px" } },
+    labels: { format: "{value}%", style: { color: "#16a34a", fontSize: "13px" } },
+    title: { text: "Yield (%)", style: { color: "#16a34a",  fontSize: "14px" } },
     opposite: true
   },
   {
-    labels: { format: "{value} T", style: { color: "#6366f1", fontSize: "13px" } },
-    title: { text: "Production (T)", style: { color: "#6366f1", fontSize: "14px" } }
+    labels: { format: "{value} T", style: { color: "#38bdf8", fontSize: "13px" } },
+    title: { text: "Production (T)", style: { color: "#38bdf8", fontSize: "14px" } }
   }
 ],
 
@@ -874,7 +671,7 @@ legend: {
       type: "column",
       yAxis: 1,
       data: tonnageData,
-      color: "#6366f1",
+      color: "#38bdf8",
       point: {
         events: {
           click: (e) => {
@@ -889,7 +686,7 @@ legend: {
       type: "spline",
       yAxis: 0,
       data: yieldData,
-      color: "#10b981",
+      color: "#16a34a",
       tooltip: { valueSuffix: "%" },
       point: {
         events: {
@@ -902,6 +699,10 @@ legend: {
     }
   ]
 };
+
+// ----------------------
+// HIGHCHARTS MONTHWISE CONFIG
+// ----------------------
 const monthLabels = monthlyApiData.map(item => item.month);
 const monthYield = monthlyApiData.map(item => item.avgYield);
 const monthProduction = monthlyApiData.map(item => item.totalProduction);
@@ -922,13 +723,13 @@ xAxis: [{
 
 yAxis: [
   {
-    labels: { format: "{value}%", style: { color: "#10b981", fontSize: "13px" } },
-    title: { text: "Yield (%)", style: { color: "#10b981", fontSize: "14px" } },
+    labels: { format: "{value}%", style: { color: "#16a34a", fontSize: "13px" } },
+    title: { text: "Yield (%)", style: { color: "#16a34a", fontSize: "14px" } },
     opposite: true
   },
   {
-    labels: { format: "{value} T", style: { color: "#6366f1", fontSize: "13px" } },
-    title: { text: "Production (T)", style: { color: "#6366f1", fontSize: "14px" } }
+    labels: { format: "{value} T", style: { color: "#38bdf8", fontSize: "13px" } },
+    title: { text: "Production (T)", style: { color: "#38bdf8", fontSize: "14px" } }
   }
 ],
 
@@ -946,7 +747,7 @@ legend: {
       type: "column",
       yAxis: 1,
       data: monthProduction,
-      color: "#6366f1",
+      color: "#38bdf8",
       point: {
         events: {
           click: (e) => {
@@ -961,7 +762,7 @@ legend: {
       type: "spline",
       yAxis: 0,
       data: monthYield,
-      color: "#10b981",
+      color: "#16a34a",
       tooltip: { valueSuffix: "%" },
       point: {
         events: {
@@ -981,27 +782,27 @@ if (isLoading) {
   return (
     <div style={styles.layout}>
       <div style={styles.header}>
-          {/* LEFT: Logo */}
-          <div style={styles.headerLeft}>
-            <img
-              src="/kalyani.iot/engg/kalyani_logo.png"
-              style={styles.headerLogo}
-            />
-          </div>
-
-          {/* CENTER: Title (TRUE CENTER) */}
-          <h1 style={styles.headerTitleCentered}>
-            Manufacturing Yield Dashboard
-          </h1>
-
-          {/* RIGHT: Button (kept but does NOT affect centering) */}
-          <button
-            style={styles.masterEditBtn}
-            onClick={() => setShowMasterPopup(true)}
-          >
-            ✏️ Edit Master Data
-          </button>
+        {/* LEFT: Logo */}
+        <div style={styles.headerLeft}>
+          <img
+            src="/kalyani.iot/engg/kalyani_logo.png"
+            style={styles.headerLogo}
+          />
         </div>
+
+        {/* CENTER: Title (TRUE CENTER) */}
+        <h1 style={styles.headerTitleCentered}>
+          Manufacturing Yield Dashboard
+        </h1>
+
+        {/* RIGHT: Button (kept but does NOT affect centering) */}
+        <button
+          style={styles.masterEditBtn}
+          onClick={() => setShowMasterPopup(true)}
+        >
+          ✏️ Edit Data
+        </button>
+      </div>
 
       <div style={styles.plantOverviewFixed}>
            {activePlant && (
@@ -1012,9 +813,7 @@ if (isLoading) {
               Clear
             </button>
           )}
-        <h2 style={styles.plantOverviewTitle}>
-           Plant Overview
-        </h2>
+
 
         <div style={styles.cardGrid}>
 
@@ -1033,6 +832,9 @@ if (isLoading) {
                   : 0
               }
               label="All Plants"
+              target={Object.values(plantTargets).length
+                ? Object.values(plantTargets).reduce((a,b)=>a+b,0)/Object.values(plantTargets).length
+                : 0}
             />
           </div>
 
@@ -1052,6 +854,7 @@ if (isLoading) {
               <HalfDonut
                 value={plant.avgYield}
                 label={plant.plant_code}
+                target={plantTargets[PLANT_REVERSE[plant.plant_code]]}
               />
             </div>
           ))}
@@ -1153,7 +956,7 @@ if (isLoading) {
             </div>
             </div>
             <div style={styles.paneRight}>
-              <div style={{ width: "100%", height: "350px" }}>
+              <div style={{ width: "100%", height: "100%" }}>
                 <HighchartsReact
                   highcharts={Highcharts}
                   options={yearwiseHighchartOptions}
@@ -1220,7 +1023,7 @@ if (isLoading) {
 
             </div>
             {dieViewType === "chart" ? (
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={420}>
                 <BarChart data={filteredDieApiData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="die_no" />
@@ -1385,7 +1188,7 @@ if (isLoading) {
 
 
             {familyViewType === "chart" ? (
-              <ResponsiveContainer width="100%" height={350}>
+              <ResponsiveContainer width="100%" height={420}>
                 <BarChart data={filteredFamilyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="family" />
@@ -1394,7 +1197,7 @@ if (isLoading) {
                   <Legend />
                   <Bar
                       dataKey="avgYield"
-                      fill="#8b5cf6"
+                      fill="#38bdf8"
                       name="Avg Yield %"
                       cursor="pointer"
                       onClick={() => setActiveTab("die")}   // Tab switch to Die-wise
@@ -1661,7 +1464,7 @@ if (isLoading) {
                         <h4 style={{ marginBottom: "10px", fontSize: "14px", color: "#64748b" }}>
                           Production by Family
                         </h4>
-                        <ResponsiveContainer width="100%" height={350}>
+                        <ResponsiveContainer width="100%" height={420}>
                           <BarChart data={familyWiseDataForMonth}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="family" />
@@ -1737,7 +1540,7 @@ if (isLoading) {
                     {/*  Existing Die-wise Chart */}
                     <div style={{ marginTop: "25px" }}>
                       <h3 style={styles.modalSectionTitle}>Die-wise Performance</h3>
-                      <ResponsiveContainer width="100%" height={350}>
+                      <ResponsiveContainer width="100%" height={420}>
                         <BarChart data={dieMonthlyApiData || []}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="die_no" />
@@ -1858,7 +1661,7 @@ if (isLoading) {
                       </td>
                     </tr>
                     <tr>
-                      <td style={styles.summaryTableThTd}><b>Period</b></td>
+                      <td style={styles.summaryTableThTd}><b>Month/Year</b></td>
                       <td style={styles.summaryTableThTd}>
                         {dieMonth}/{dieYear}
                       </td>
@@ -1870,539 +1673,11 @@ if (isLoading) {
           </div>
         )}
 
-
         {/* ================= MASTER DATA POPUP ================= */}
-        {showMasterPopup && (
-          <div style={styles.popupOverlay}>
-            <div style={styles.masterPopup}>
-              {/* HEADER */}
-              <div style={styles.masterPopupHeader}>
-                <h3>Master Data Management</h3>
-                <button
-                  style={styles.closeBtn}
-                  onClick={() => setShowMasterPopup(false)}
-                >
-                  ✖
-                </button>
-              </div>
-              {/* TABS */}
-              <div style={styles.masterTabRow}>
-                <button
-                  style={{
-                    ...styles.masterTab,
-                    ...(masterTab === "edit" ? styles.masterTabActive : {})
-                  }}
-                  onClick={() => setMasterTab("edit")}
-                >
-                  ✏️ Edit Existing
-                </button>
-                <button
-                  style={{
-                    ...styles.masterTab,
-                    ...(masterTab === "create" ? styles.masterTabActive : {})
-                  }}
-                  onClick={() => setMasterTab("create")}
-                >
-                  ➕ Create New
-                </button>
-              </div>
-              {/* TAB CONTENT */}
-              <div style={styles.masterContent}>
-                {masterTab === "edit" ? (
-                  <div>
-                    <h4>Edit Master Data</h4>
-                    <p style={{ color: "#64748b" }}>Search by Die Number</p>
-                    <div style={{ display: "flex", gap: "8px" }}>
-                      <input
-                        placeholder="Enter Die Number…"
-                        style={styles.masterInput}
-                        value={masterSearchNo}
-                        onChange={(e) => setMasterSearchNo(e.target.value)}
-                      />
-                      <button style={styles.masterSaveBtn} onClick={fetchMasterRecord}>
-                        Search
-                      </button>
-                    </div>
-                    {masterError && <p style={{ color: "red" }}>{masterError}</p>}
-                    {masterLoading && <p>Loading...</p>}
-                    {masterResult && (
-                      <div style={styles.masterFormCard}>
-                        <h4>Editing: Die {masterResult.die_number}</h4>
-                        {/* ================= SECTION A - MASTER DATA ================= */}
-                            <h3 style={styles.masterSectionTitle}>Master Data</h3>
-                            <div style={styles.masterFormGrid}>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Plant Code</label>
-                                <input
-                                  style={{ ...styles.masterInput, background: "#f1f5f9" }}
-                                  value={masterResult.plant_code ?? ""}
-                                  disabled
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Die Number</label>
-                                <input
-                                  style={{ ...styles.masterInput, background: "#f1f5f9" }}
-                                  value={masterResult.die_number ?? ""}
-                                  disabled
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Forging Press (T)</label>
-                                <input
-                                  style={styles.masterInput}
-                                  value={masterResult.forge_press ?? ""}
-                                  onChange={(e) =>
-                                    setMasterResult({ ...masterResult, forge_press: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Cycle Time (sec)</label>
-                                <input
-                                  style={styles.masterInput}
-                                  value={masterResult.cycle_time ?? ""}
-                                  onChange={(e) =>
-                                    setMasterResult({ ...masterResult, cycle_time: e.target.value })
-                                  }
-                                />
-                              </div>
-                            </div>
-                            {/* ================= SECTION B - CUSTOMER ================= */}
-                            <h3 style={styles.masterSectionTitle}>Customer</h3>
-                            <div style={styles.masterFormGrid}>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Customer Name</label>
-                                <input
-                                  style={{ ...styles.masterInput, background: "#f1f5f9" }}
-                                  value={masterResult.customer_name ?? ""}
-                                  disabled
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Part Name</label>
-                                <input
-                                  style={styles.masterInput}
-                                  value={masterResult.part_name ?? ""}
-                                  onChange={(e) =>
-                                    setMasterResult({ ...masterResult, part_name: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Country</label>
-                                <input
-                                  style={styles.masterInput}
-                                  value={masterResult.country ?? ""}
-                                  onChange={(e) =>
-                                    setMasterResult({ ...masterResult, country: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                <label style={styles.masterCreateLabel}>Currency</label>
-                                <input
-                                  style={styles.masterInput}
-                                  value={masterResult.currency ?? ""}
-                                  onChange={(e) =>
-                                    setMasterResult({ ...masterResult, currency: e.target.value })
-                                  }
-                                />
-                              </div>
-                              <div>
-                                  <label style={styles.masterCreateLabel}>KAM</label>
-                                  <input
-                                    style={styles.masterInput}
-                                    value={masterResult.kam ?? ""}
-                                    onChange={(e) =>
-                                      setMasterResult({ ...masterResult, kam: e.target.value })
-                                    }
-                                  />
-                              </div>
-                            </div>
-                            {/* ================= SECTION C - WEIGHT ================= */}
-                            <h3 style={styles.masterSectionTitle}>Weight</h3>
-                            <div style={styles.masterFormGrid}>
-                              {[
-                                ["Cut Weight (kg)", "cut_wt"],
-                                ["Burr Weight (kg)", "burr_wt"],
-                                ["Flash/Slug Weight (kg)", "flash_slug_wt"],
-                                ["End-piece Weight (kg)", "endpc_wt"],
-                                ["Gross Weight (kg)", "gross_wt"],
-                                ["Net Weight (kg)", "net_wt"],
-                                ["Machining Weight", "machining_wt"],
-                              ].map(([label, key]) => (
-                                <div key={key}>
-                                  <label style={styles.masterCreateLabel}>{label}</label>
-                                  <input
-                                    style={styles.masterInput}
-                                    value={masterResult[key] ?? ""}
-                                    onChange={(e) =>
-                                      setMasterResult({ ...masterResult, [key]: e.target.value })
-                                    }
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                            {/* ================= SECTION D - RATE ================= */}
-                            <h3 style={styles.masterSectionTitle}>Rate</h3>
-                                <div style={styles.masterFormGrid}>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Forging Price (₹)</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.forge_price ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, forge_price: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Forge Scrap Price (₹)</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.forge_scrap_price ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, forge_scrap_price: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>RM Rate/kg (₹)</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.rm_rate_kg ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, rm_rate_kg: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                                <h3 style={styles.masterSectionTitle}>Raw Material</h3>
-                                <div style={styles.masterFormGrid}>
-
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>R Code</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.r_code ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, r_code: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Raw Material Grade</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.rm_grade ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, rm_grade: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Section (mm)</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.rm_section ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, rm_section: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Cut Length (mm)</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.cut_length ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, cut_length: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                                <h3 style={styles.masterSectionTitle}>Heat Treatment</h3>
-                                <div style={styles.masterFormGrid}>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>Heat Treatment Process</label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.ht_process ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, ht_process: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                  <div>
-                                    <label style={styles.masterCreateLabel}>
-                                      Heat Treatment Cycle Time (sec)
-                                    </label>
-                                    <input
-                                      style={styles.masterInput}
-                                      value={masterResult.ht_cycle ?? ""}
-                                      onChange={(e) =>
-                                        setMasterResult({ ...masterResult, ht_cycle: e.target.value })
-                                      }
-                                    />
-                                  </div>
-                                </div>
-                        <button
-                          style={{ ...styles.masterSaveBtn, marginTop: "10px" }}
-                          onClick={updateMasterRecord}
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={styles.masterFormCard}>
-                    <h4>Create New Master Row</h4>
-                    <p style={{ color: "#64748b" }}>Fill all required details</p>
-                    {/* ================= SECTION A - MASTER DATA ================= */}
-                    <h3 style={styles.masterSectionTitle}>Master Data</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Plant Code*</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.plant_code}
-                          onChange={(e) => setCreateForm({ ...createForm, plant_code: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Die Number*</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.die_number}
-                          onChange={(e) => setCreateForm({ ...createForm, die_number: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Forging Press (T)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.forge_press}
-                          onChange={(e) => setCreateForm({ ...createForm, forge_press: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Cycle Time (sec)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.cycle_time}
-                          onChange={(e) => setCreateForm({ ...createForm, cycle_time: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {/* ================= SECTION B - CUSTOMER ================= */}
-                    <h3 style={styles.masterSectionTitle}>Customer</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Customer Name*</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.customer_name}
-                          onChange={(e) => setCreateForm({ ...createForm, customer_name: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Part Name</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.part_name}
-                          onChange={(e) => setCreateForm({ ...createForm, part_name: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Country</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.country}
-                          onChange={(e) => setCreateForm({ ...createForm, country: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Currency</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.currency}
-                          onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>KAM</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.kam}
-                          onChange={(e) => setCreateForm({ ...createForm, kam: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {/* ================= SECTION C - WEIGHT ================= */}
-                    <h3 style={styles.masterSectionTitle}>Weight</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Cut Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.cut_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, cut_wt: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Burr Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.burr_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, burr_wt: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Flash/Slug Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.flash_slug_wt}
-                          onChange={(e) =>
-                            setCreateForm({ ...createForm, flash_slug_wt: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>End-piece Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.endpc_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, endpc_wt: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Gross Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.gross_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, gross_wt: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Net Weight (kg)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.net_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, net_wt: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Machining / Finisher Weight</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.machining_wt}
-                          onChange={(e) => setCreateForm({ ...createForm, machining_wt: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {/* ================= SECTION D - RATE ================= */}
-                    <h3 style={styles.masterSectionTitle}>Rate</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Forging Price (₹)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.forge_price}
-                          onChange={(e) => setCreateForm({ ...createForm, forge_price: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Forge Scrap Price (₹)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.forge_scrap_price}
-                          onChange={(e) =>
-                            setCreateForm({ ...createForm, forge_scrap_price: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>RM Rate/kg (₹)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.rm_rate_kg}
-                          onChange={(e) =>
-                            setCreateForm({ ...createForm, rm_rate_kg: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-                    {/* ================= SECTION E - RAW MATERIAL ================= */}
-                    <h3 style={styles.masterSectionTitle}>Raw Material</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>R Code</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.r_code}
-                          onChange={(e) => setCreateForm({ ...createForm, r_code: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Raw Material Grade</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.rm_grade}
-                          onChange={(e) => setCreateForm({ ...createForm, rm_grade: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Section (mm)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.rm_section}
-                          onChange={(e) => setCreateForm({ ...createForm, rm_section: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Cut Length (mm)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.cut_length}
-                          onChange={(e) => setCreateForm({ ...createForm, cut_length: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {/* ================= SECTION F - HEAT TREATMENT ================= */}
-                    <h3 style={styles.masterSectionTitle}>Heat Treatment</h3>
-                    <div style={styles.masterFormGrid}>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Heat Treatment Process</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.ht_process}
-                          onChange={(e) => setCreateForm({ ...createForm, ht_process: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label style={styles.masterCreateLabel}>Heat Treatment Cycle Time (sec)</label>
-                        <input
-                          style={styles.masterInput}
-                          value={createForm.ht_cycle}
-                          onChange={(e) => setCreateForm({ ...createForm, ht_cycle: e.target.value })}
-                        />
-                      </div>
-                    </div>
-                    {/* CREATE BUTTON */}
-                    <button
-                      style={{ ...styles.masterSaveBtn, marginTop: "16px" }}
-                      onClick={createMasterRecord}
-                    >
-                      Create Record
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <MasterDataPopup
+          show={showMasterPopup}
+          onClose={() => setShowMasterPopup(false)}
+        />
       </div>
     </div>
   );
@@ -2421,11 +1696,10 @@ const styles = {
     padding: "5px",
   },
 header: {
-  position: "sticky",
   top: 0,
   zIndex: 1000,
   width: "100%",
-  background: "linear-gradient(90deg, #4f46e5, #6366f1)",
+  background: "linear-gradient(90deg, #38bdf8, #0ea5e9)",
   padding: "7px 18px",
   borderRadius: "10px",
   marginBottom: "5px",
@@ -2491,7 +1765,7 @@ plantCard: {
   borderRadius: "12px",
   padding: "5px",
   width: "150px",
-  height: "100px",
+  height: "120px",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
@@ -2505,9 +1779,9 @@ plantCard: {
 },
 
 plantCardActive: {
-  background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)",
-  border: "2px solid #6366f1",
-  boxShadow: "0 3px 8px rgba(99, 102, 241, 0.25)",
+  background: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
+  border: "2px solid #38bdf8",
+  boxShadow: "0 3px 8px rgba(56, 189, 248, 0.35)",
 },
 
   tabs: { display: "flex", gap: "6px", marginTop: "4px" },
@@ -2522,12 +1796,12 @@ plantCardActive: {
     fontWeight: "500",
     transition: "all 0.2s ease",
   },
-  activeTab: {
-    background: "#e0e7ff",
-    color: "#1e1b4b",
-    border: "1px solid #4f46e5",
-    fontWeight: "600",
-  },
+ activeTab: {
+  background: "#e0f2fe",
+  color: "#075985",
+  border: "1px solid #38bdf8",
+  fontWeight: "600",
+},
   contentArea: {
     flex: 1,
     display: "flex",
@@ -2550,6 +1824,7 @@ plantCardActive: {
     background: "rgba(255,255,255,0.9)",
     borderRadius: "10px",
     padding: "10px",
+    minHeight: "520px",
   },
 
   kpiCard: {
@@ -2654,9 +1929,7 @@ modalSectionTitle: {
 },
 modalStats: {
   background: "white",
-  padding: "10px",
   borderRadius: "10px",
-  marginTop: "10px",
   display: "flex",
   flexDirection: "row",
   justifyContent: "space-between",
@@ -2837,81 +2110,11 @@ masterEditBtn: {
   boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
   zIndex: 10,
 },
-masterPopup: {
-  width: "75%",
-  height: "90%",
-  background: "white",
-  borderRadius: "12px",
-  padding: "16px",
-  display: "flex",
-  flexDirection: "column",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-},
-
-masterPopupHeader: {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "10px",
-},
-
-masterTabRow: {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "12px",
-},
-
-masterTab: {
-  padding: "8px 14px",
-  border: "1px solid #cbd5e1",
-  borderRadius: "6px",
-  cursor: "pointer",
-  background: "#f1f5f9",
-  color: "#334155",
-  fontWeight: "500",
-},
-
-masterTabActive: {
-  background: "#4f46e5",
-  borderColor: "#4f46e5",
-  color: "white",
-},
-
-masterContent: {
-  flex: 1,
-  overflowY: "auto",
-  padding: "10px",
-  boxShadow: "inset 0 0 6px rgba(0,0,0,0.05)",
-  borderRadius: "6px",
-},
-
-masterInput: {
-  width: "100%",
-  padding: "9px 10px",
-  borderRadius: "8px",
-  border: "1px solid #cbd5e1",
-  fontSize: "14px",
-  background: "#ffffff",
-  transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
-  outline: "none",
-},
-
-masterSaveBtn: {
-  background: "linear-gradient(135deg, #10b981, #059669)",
-  color: "white",
-  padding: "10px 16px",
-  borderRadius: "8px",
-  border: "none",
-  fontWeight: "600",
-  cursor: "pointer",
-  fontSize: "14px",
-  boxShadow: "0 2px 6px rgba(16,185,129,0.35)",
-},
 
 kpiCardBase: {
   borderRadius: "14px",
   padding: "8px 12px",
-  height: "80px",
+  height: "105px",
   display: "flex",
   alignItems: "center",
   boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
@@ -2938,8 +2141,8 @@ kpiLabel: {
 kpiValue: {
   margin: 0,
   marginTop: "3px",
-  fontSize: "19px",
-  fontWeight: "700",
+  fontSize: "24px",
+  fontWeight: "1000",
   letterSpacing: "0.3px",
 },
 kpiIcon: {
@@ -2959,11 +2162,6 @@ kpiGrid: {
   gap: "10px",          // spacing between KPI cards
   marginBottom: "10px", // optional extra bottom padding
 },
-masterFormGrid: {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  gap: "12px",
-},
 
 sectionHeader: {
   marginTop: "15px",
@@ -2978,33 +2176,6 @@ masterLabel: {
   color: "#475569",
   marginBottom: "4px",
   display: "block",
-},
-masterCreateLabel: {
-  fontSize: "12px",
-  fontWeight: "500",
-  color: "#64748b",
-  marginBottom: "4px",
-  display: "block",
-  textTransform: "uppercase",
-  letterSpacing: "0.5px",
-},
-
-masterFormCard: {
-  background: "linear-gradient(180deg, #ffffff, #f8fafc)",
-  borderRadius: "12px",
-  padding: "18px",
-  border: "1px solid #e2e8f0",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-},
-
-masterSectionTitle: {
-  fontSize: "15px",
-  fontWeight: "600",
-  marginTop: "20px",
-  marginBottom: "10px",
-  color: "#334155",                // softer than black
-  paddingBottom: "6px",
-  borderBottom: "1px dashed #e2e8f0", // dashed = lighter feel
 },
 plantOverviewTitle: {
   margin: "0 0 6px 4px",
@@ -3039,6 +2210,5 @@ familyFilterSelect: {
   background: "#ffffff",
   cursor: "pointer",
 }
-
 
 };
