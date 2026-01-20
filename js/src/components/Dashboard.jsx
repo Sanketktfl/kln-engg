@@ -19,6 +19,12 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const getFinancialYear = (year, month) => {
+  const m = Number(month);
+  return m >= 4 ? year : year - 1;
+};
+
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedYear, setSelectedYear] = useState(null);
@@ -44,35 +50,61 @@ const Dashboard = () => {
   const [plantTargets, setPlantTargets] = useState({});
 
 
-const [familyYear, setFamilyYear] = useState(new Date().getFullYear());
-const [familyMonth, setFamilyMonth] = useState(
-  String(new Date().getMonth() + 1).padStart(2, "0")
-);
-const [dieYear, setDieYear] = useState(new Date().getFullYear());
-const [dieMonth, setDieMonth] = useState(
-  String(new Date().getMonth() + 1).padStart(2, "0")
-);
+  const today = new Date();
+  const currentFY = getFinancialYear(today.getFullYear(), today.getMonth() + 1);
+
+  const [familyYear, setFamilyYear] = useState(currentFY);
+  const [dieYear, setDieYear] = useState(currentFY);
 
 
-const PLANT_MAP = {
-  2101: "R2",
-  7001: "Mundhwa",
-  7026: "R1",
-  7028: "Baramati"
-};
+  const [familyMonth, setFamilyMonth] = useState(
+    String(new Date().getMonth() + 1).padStart(2, "0")
+  );
+  const [dieMonth, setDieMonth] = useState(
+    String(new Date().getMonth() + 1).padStart(2, "0")
+  );
 
-const PLANT_REVERSE = {
-  R2: 2101,
-  Mundhwa: 7001,
-  R1: 7026,
-  Baramati: 7028
-};
-const normalizeFamily = (family) => {
-  if (!family || String(family).trim() === "") {
-    return "Other";
-  }
-  return family.trim();
-};
+const [familyPeriodType, setFamilyPeriodType] = useState("month"); // month | quarter
+const [diePeriodType, setDiePeriodType] = useState("month");       // month | quarter
+
+const [familyQuarter, setFamilyQuarter] = useState("Q1");
+const [dieQuarter, setDieQuarter] = useState("Q1");
+
+const FY_QUARTERS = [
+  ["Q1", "Q1 (Apr–Jun)"],
+  ["Q2", "Q2 (Jul–Sep)"],
+  ["Q3", "Q3 (Oct–Dec)"],
+  ["Q4", "Q4 (Jan–Mar)"]
+];
+
+
+  const PLANT_MAP = {
+    2101: "R2",
+    7001: "Mundhwa",
+    7026: "R1",
+    7028: "Baramati"
+  };
+
+  const PLANT_REVERSE = {
+    R2: 2101,
+    Mundhwa: 7001,
+    R1: 7026,
+    Baramati: 7028
+  };
+  const normalizeFamily = (family) => {
+    if (!family || String(family).trim() === "") {
+      return "Other";
+    }
+    return family.trim();
+  };
+
+const getFYLabel = (y) => `${y}-${y + 1}`;
+
+const FY_MONTHS = [
+  ["04","Apr"], ["05","May"], ["06","Jun"], ["07","Jul"],
+  ["08","Aug"], ["09","Sep"], ["10","Oct"], ["11","Nov"],
+  ["12","Dec"], ["01","Jan"], ["02","Feb"], ["03","Mar"]
+];
 
 const HalfDonut = ({ value, label, target }) => {
   const progress = Math.min(Math.max(Number(value) || 0, 0), 100);
@@ -187,7 +219,15 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";
 
-      const url = `http://localhost:8080/internal/yield_dashboard_fam?year=${familyYear}&month=${familyMonth}&plant_code=${plantCode}`;
+      const fy = getFinancialYear(familyYear, familyMonth);
+
+      let url = "";
+      if (familyPeriodType === "month") {
+        url = `http://localhost:8080/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
+      } else {
+        url = `http://localhost:8080/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
+      }
+
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -235,7 +275,7 @@ useEffect(() => {
   };
 
   fetchFamilyData();
-}, [activeTab, familyYear, familyMonth, activePlant]);
+}, [activeTab, familyYear, familyMonth, familyQuarter, familyPeriodType, activePlant]);
 
 useEffect(() => {
   const fetchTargets = async () => {
@@ -266,9 +306,14 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";
 
-      const url =
-        `http://localhost:8080/internal/yield_dashboard_die` +
-        `?year=${dieYear}&month=${dieMonth}&plant_code=${plantCode}`;
+      const fy = getFinancialYear(dieYear, dieMonth);
+
+      let url = "";
+      if (diePeriodType === "month") {
+        url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
+      } else {
+        url = `http://localhost:8080/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
+      }
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -297,7 +342,7 @@ useEffect(() => {
     }
   };
   fetchDieTabMonthlyData();
-}, [activeTab, dieYear, dieMonth, activePlant]);
+}, [activeTab, dieYear, dieMonth, dieQuarter, diePeriodType, activePlant]);
 
 
 useEffect(() => {
@@ -352,7 +397,8 @@ useEffect(() => {
       // plant_code logic
       const plantCode = activePlant ?? "";
 
-      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${selectedYear}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const fy = getFinancialYear(selectedYear, formattedMonth);
+      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -401,7 +447,8 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";   // numeric or empty
 
-      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${selectedYear}&plant_code=${plantCode}`;
+      const fy = getFinancialYear(selectedYear, selectedMonth || "04");
+      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -974,30 +1021,50 @@ if (isLoading) {
 
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   {/* Year */}
+                  {/* Mode */}
+                  <select
+                    value={diePeriodType}
+                    onChange={(e) => setDiePeriodType(e.target.value)}
+                    style={styles.familyFilterSelect}
+                  >
+                    <option value="month">Month Wise</option>
+                    <option value="quarter">Quarter Wise</option>
+                  </select>
+
+                  {/* Financial Year */}
                   <select
                     value={dieYear}
                     onChange={(e) => setDieYear(Number(e.target.value))}
                     style={styles.familyFilterSelect}
                   >
                     {[2023, 2024, 2025, 2026].map(y => (
-                      <option key={y} value={y}>{y}</option>
+                      <option key={y} value={y}>{getFYLabel(y)}</option>
                     ))}
                   </select>
 
-                  {/* Month */}
-                  <select
-                    value={dieMonth}
-                    onChange={(e) => setDieMonth(e.target.value)}
-                    style={styles.familyFilterSelect}
-                  >
-                    {[
-                      ["01","Jan"],["02","Feb"],["03","Mar"],["04","Apr"],
-                      ["05","May"],["06","Jun"],["07","Jul"],["08","Aug"],
-                      ["09","Sep"],["10","Oct"],["11","Nov"],["12","Dec"]
-                    ].map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
+                  {/* Month / Quarter */}
+                  {diePeriodType === "month" ? (
+                    <select
+                      value={dieMonth}
+                      onChange={(e) => setDieMonth(e.target.value)}
+                      style={styles.familyFilterSelect}
+                    >
+                      {FY_MONTHS.map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <select
+                      value={dieQuarter}
+                      onChange={(e) => setDieQuarter(e.target.value)}
+                      style={styles.familyFilterSelect}
+                    >
+                      {FY_QUARTERS.map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </select>
+                  )}
+
                   <div style={styles.familyToggleGroup}>
                   <button
                     style={{
@@ -1137,30 +1204,50 @@ if (isLoading) {
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 {/* Year Filter */}
+                {/* Mode */}
+                <select
+                  value={familyPeriodType}
+                  onChange={(e) => setFamilyPeriodType(e.target.value)}
+                  style={styles.familyFilterSelect}
+                >
+                  <option value="month">Month Wise</option>
+                  <option value="quarter">Quarter Wise</option>
+                </select>
+
+                {/* Financial Year */}
                 <select
                   value={familyYear}
                   onChange={(e) => setFamilyYear(Number(e.target.value))}
                   style={styles.familyFilterSelect}
                 >
                   {[2023, 2024, 2025, 2026].map(y => (
-                    <option key={y} value={y}>{y}</option>
+                    <option key={y} value={y}>{getFYLabel(y)}</option>
                   ))}
                 </select>
 
-                {/* Month Filter */}
-                <select
-                  value={familyMonth}
-                  onChange={(e) => setFamilyMonth(e.target.value)}
-                  style={styles.familyFilterSelect}
-                >
-                  {[
-                    ["01","Jan"],["02","Feb"],["03","Mar"],["04","Apr"],
-                    ["05","May"],["06","Jun"],["07","Jul"],["08","Aug"],
-                    ["09","Sep"],["10","Oct"],["11","Nov"],["12","Dec"]
-                  ].map(([val, label]) => (
-                    <option key={val} value={val}>{label}</option>
-                  ))}
-                </select>
+                {/* Month / Quarter */}
+                {familyPeriodType === "month" ? (
+                  <select
+                    value={familyMonth}
+                    onChange={(e) => setFamilyMonth(e.target.value)}
+                    style={styles.familyFilterSelect}
+                  >
+                    {FY_MONTHS.map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={familyQuarter}
+                    onChange={(e) => setFamilyQuarter(e.target.value)}
+                    style={styles.familyFilterSelect}
+                  >
+                    {FY_QUARTERS.map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                )}
+
 
                 {/* View Toggle */}
                 <div style={styles.familyToggleGroup}>
