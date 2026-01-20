@@ -3,6 +3,8 @@ import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import DieWeightBar from "./DieWeightBar";
 import MasterDataPopup from "./MasterDataPopup";
+import ComparisonPopup from "./ComparisonPopup";
+
 
 import {
   Line,
@@ -48,6 +50,8 @@ const Dashboard = () => {
   const [wtLoading, setWtLoading] = useState(false);
   const [showMasterPopup, setShowMasterPopup] = useState(false);
   const [plantTargets, setPlantTargets] = useState({});
+  const [showComparisonPopup, setShowComparisonPopup] = useState(false);
+
 
 
   const today = new Date();
@@ -844,11 +848,18 @@ if (isLoading) {
 
         {/* RIGHT: Button (kept but does NOT affect centering) */}
         <button
+          style={styles.comparisonBtn}
+          onClick={() => setShowComparisonPopup(true)}
+        >
+          📊 Comparison
+        </button>
+        <button
           style={styles.masterEditBtn}
           onClick={() => setShowMasterPopup(true)}
         >
           ✏️ Edit Data
         </button>
+
       </div>
 
       <div style={styles.plantOverviewFixed}>
@@ -1765,6 +1776,10 @@ if (isLoading) {
           show={showMasterPopup}
           onClose={() => setShowMasterPopup(false)}
         />
+        <ComparisonPopup
+          show={showComparisonPopup}
+          onClose={() => setShowComparisonPopup(false)}
+        />
       </div>
     </div>
   );
@@ -2296,6 +2311,21 @@ familyFilterSelect: {
   fontSize: "13px",
   background: "#ffffff",
   cursor: "pointer",
-}
+},
+  comparisonBtn: {
+  position: "absolute",
+  top: "4px",
+  right: "115px",   // just left of Edit Data
+  background: "#ecfeff",
+  color: "#0f766e",
+  padding: "5px 10px",
+  borderRadius: "3px",
+  border: "none",
+  fontSize: "13px",
+  fontWeight: "500",
+  cursor: "pointer",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+},
+
 
 };

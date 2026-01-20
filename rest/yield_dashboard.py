@@ -6,6 +6,7 @@ from collections import defaultdict
 
 class YieldDashboard(JsonAPI):
     pass
+
 @Internal.mount(app=YieldDashboard, path="yield_dashboard")
 def _mount_app():
     return YieldDashboard()
@@ -91,11 +92,13 @@ def _json(model, request):
         filters["plant_code"] = request.params.get("plant_code")
     return model.yearly_yield(filters)
 
+# ================= MONTHLY ==================
 
 
 #For Monthly popup
 class YieldDashboardMonthly(JsonAPI):
     pass
+
 @Internal.mount(app=YieldDashboardMonthly, path="yield_dashboard_monthly")
 def _mount_app():
     return YieldDashboardMonthly()
@@ -134,11 +137,13 @@ def _json(model, request):
         filters['plant_code'] = request.params.get('plant_code')
     return model.yearly_yieldmonthly(filters)
 
+# ================= DIE-MONTH ==================
 
 
 #For DieMonth popup
 class YieldDashboardDie(JsonAPI):
     pass
+
 @Internal.mount(app=YieldDashboardDie, path="yield_dashboard_die")
 def _mount_app():
     return YieldDashboardDie()
