@@ -1,43 +1,53 @@
 import React, { useState } from "react";
 
 const ComparisonPopup = ({ show, onClose }) => {
+
   const [comparisonType, setComparisonType] = useState("die");
-
   const [periodType, setPeriodType] = useState("month");
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState("01");
+  const today = new Date();
+  const calYear = today.getFullYear();
+  const calMonth = today.getMonth() + 1;
+  const fyYear = calMonth >= 4 ? calYear : calYear - 1;
+  const [year, setYear] = useState(fyYear);
+  const [month, setMonth] = useState(String(calMonth).padStart(2, "0"));
   const [quarter, setQuarter] = useState("Q1");
-
   const [dieLeft, setDieLeft] = useState("");
   const [dieRight, setDieRight] = useState("");
-
   const [leftData, setLeftData] = useState([]);
   const [rightData, setRightData] = useState([]);
+  const [familyLeft, setFamilyLeft] = useState("");
+  const [familyRight, setFamilyRight] = useState("");
+  const [familyLeftData, setFamilyLeftData] = useState([]);
+  const [familyRightData, setFamilyRightData] = useState([]);
 
   if (!show) return null;
 
   const fetchDieData = async (dieNo, setData) => {
     let url = `http://localhost:8080/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
-
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
-
     const resp = await fetch(url);
-    const data = await resp.json();
-    setData(data);
+    setData(await resp.json());
+  };
+
+  const fetchFamilyData = async (family, setData) => {
+    let url = `http://localhost:8080/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
+    if (periodType === "month") url += `&month=${month}`;
+    if (periodType === "quarter") url += `&quarter=${quarter}`;
+    const resp = await fetch(url);
+    setData(await resp.json());
   };
 
   return (
     <div style={styles.overlay}>
       <div style={styles.content}>
+
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <div style={styles.iconCircle}>📊</div>
             <h2 style={styles.title}>Yield Comparison</h2>
           </div>
-          <button style={styles.closeBtn} onClick={onClose}>
-            <span style={styles.closeBtnText}>Close</span>
-          </button>
+          <button style={styles.closeBtn} onClick={onClose}>Close</button>
         </div>
 
         <div style={styles.filterSection}>
@@ -49,137 +59,125 @@ const ComparisonPopup = ({ show, onClose }) => {
           </select>
         </div>
 
-        {/* Common Period Toolbar */}
         <div style={styles.toolbar}>
-          <div style={styles.toolbarLabel}>
-            <span style={styles.labelIcon}>📅</span>
-            <span style={styles.labelText}>Time Period</span>
-          </div>
-          <div style={styles.toolbarGroup}>
-            <select style={styles.selectSmall} value={periodType} onChange={e => setPeriodType(e.target.value)}>
-              <option value="year">Year</option>
-              <option value="month">Month</option>
-              <option value="quarter">Quarter</option>
-            </select>
+          <span style={styles.labelText}>Time Period</span>
+          <select style={styles.selectSmall} value={periodType} onChange={e => setPeriodType(e.target.value)}>
+            <option value="year">Year</option>
+            <option value="month">Month</option>
+            <option value="quarter">Quarter</option>
+          </select>
+          <select style={styles.selectSmall} value={year} onChange={e => setYear(e.target.value)}>
+            {[2023, 2024, 2025, 2026].map(y => (
+              <option key={y} value={y}>{y}-{y + 1}</option>
+            ))}
+          </select>
 
-            <select style={styles.selectSmall} value={year} onChange={e => setYear(e.target.value)}>
-              {[2023, 2024, 2025, 2026].map(y => (
-                <option key={y} value={y}>{y}-{y + 1}</option>
+          {periodType === "month" && (
+            <select style={styles.selectSmall} value={month} onChange={e => setMonth(e.target.value)}>
+              {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
+                <option key={m} value={m}>{m}</option>
               ))}
             </select>
+          )}
 
-            {periodType === "month" && (
-              <select style={styles.selectSmall} value={month} onChange={e => setMonth(e.target.value)}>
-                {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            )}
-
-            {periodType === "quarter" && (
-              <select style={styles.selectSmall} value={quarter} onChange={e => setQuarter(e.target.value)}>
-                <option value="Q1">Q1 (Apr-Jun)</option>
-                <option value="Q2">Q2 (Jul-Sep)</option>
-                <option value="Q3">Q3 (Oct-Dec)</option>
-                <option value="Q4">Q4 (Jan-Mar)</option>
-              </select>
-            )}
-          </div>
+          {periodType === "quarter" && (
+            <select style={styles.selectSmall} value={quarter} onChange={e => setQuarter(e.target.value)}>
+              <option value="Q1">Q1 (Apr-Jun)</option>
+              <option value="Q2">Q2 (Jul-Sep)</option>
+              <option value="Q3">Q3 (Oct-Dec)</option>
+              <option value="Q4">Q4 (Jan-Mar)</option>
+            </select>
+          )}
         </div>
 
-        {/* DIE WISE */}
         {comparisonType === "die" && (
           <div style={styles.splitVertical}>
-            <DiePanel
-              title="Die A"
-              color="#3b82f6"
-              die={dieLeft}
-              setDie={setDieLeft}
-              data={leftData}
-              onCompare={() => fetchDieData(dieLeft, setLeftData)}
-            />
-            <DiePanel
-              title="Die B"
-              color="#8b5cf6"
-              die={dieRight}
-              setDie={setDieRight}
-              data={rightData}
-              onCompare={() => fetchDieData(dieRight, setRightData)}
-            />
+            <ComparePanel title="Die A" color="#3b82f6" value={dieLeft} setValue={setDieLeft}
+              data={leftData} onCompare={() => fetchDieData(dieLeft, setLeftData)} mode="die" />
+            <ComparePanel title="Die B" color="#8b5cf6" value={dieRight} setValue={setDieRight}
+              data={rightData} onCompare={() => fetchDieData(dieRight, setRightData)} mode="die" />
           </div>
         )}
 
-        {/* FAMILY WISE */}
         {comparisonType === "family" && (
-          <div style={styles.placeholderSection}>
-            <h2 style={styles.placeholderTitle}>Family-wise Comparison</h2>
-            <p style={styles.placeholderText}>Family aggregation charts and tables will be implemented here.</p>
+          <div style={styles.splitVertical}>
+            <ComparePanel title="Family A" color="#16a34a" value={familyLeft} setValue={setFamilyLeft}
+              data={familyLeftData} onCompare={() => fetchFamilyData(familyLeft, setFamilyLeftData)} mode="family" />
+            <ComparePanel title="Family B" color="#0ea5e9" value={familyRight} setValue={setFamilyRight}
+              data={familyRightData} onCompare={() => fetchFamilyData(familyRight, setFamilyRightData)} mode="family" />
           </div>
         )}
 
-        {/* PLAN VS ACTUAL */}
         {comparisonType === "plan_actual" && (
           <div style={styles.placeholderSection}>
-            <h2 style={styles.placeholderTitle}>Plan vs Actual Comparison</h2>
-            <p style={styles.placeholderText}>Production plan vs actual KPIs and variance analysis will be implemented here.</p>
+            <h2>Plan vs Actual</h2>
+            <p>Plan vs Actual KPIs will be implemented here.</p>
           </div>
         )}
+
       </div>
     </div>
   );
 };
 
-const DiePanel = ({ title, color, die, setDie, data, onCompare }) => (
+const ComparePanel = ({ title, color, value, setValue, data, onCompare, mode }) => (
   <div style={{...styles.comparePanel, borderTop: `4px solid ${color}`}}>
     <div style={styles.panelHeader}>
       <h4 style={{...styles.panelTitle, color}}>{title}</h4>
       <div style={styles.dieInputGroup}>
         <input
-          placeholder="Enter Die Number"
-          value={die}
-          onChange={e => setDie(e.target.value)}
+          placeholder={`Enter ${mode === "die" ? "Die" : "Family"}`}
+          value={value}
+          onChange={e => setValue(e.target.value)}
           style={styles.input}
         />
-        <button style={{...styles.compareBtn, background: color}} onClick={onCompare}>
-          Compare
-        </button>
+        <button style={{...styles.compareBtn, background: color}} onClick={onCompare}>Compare</button>
       </div>
     </div>
-    <Table data={data} color={color} />
+    <Table data={data} color={color} mode={mode} />
   </div>
 );
 
-const Table = ({ data, color }) => (
+const Table = ({ data, color, mode }) => (
   <div style={styles.tableContainer}>
     <table style={styles.table}>
       <thead>
-        <tr style={{...styles.tableHeader, background: `${color}15`}}>
-          <th style={styles.th}>Die</th>
-          <th style={styles.th}>Family</th>
-          <th style={styles.th}>Yield %</th>
-          <th style={styles.th}>Tonnage</th>
-          <th style={styles.th}>Orders</th>
+        <tr style={{background: `${color}15`}}>
+          {mode === "die" ? (
+            <>
+              <th>Die</th>
+              <th>Family</th>
+            </>
+          ) : (
+            <>
+              <th>Family</th>
+              <th>Plant</th>
+            </>
+          )}
+          <th>Yield %</th>
+          <th>Tonnage</th>
+          <th>Orders</th>
         </tr>
       </thead>
       <tbody>
-        {data.length === 0 ? (
-          <tr>
-            <td colSpan="5" style={styles.emptyState}>
-              <div style={styles.emptyIcon}>📋</div>
-              <div>No data available. Enter a die number and click Compare.</div>
-            </td>
+        {data.map((r, i) => (
+          <tr key={i}>
+            {mode === "die" ? (
+              <>
+                <td>{r.pre_die_no}</td>
+                <td>{r.family}</td>
+              </>
+            ) : (
+              <>
+                <td>{r.family}</td>
+                <td>{r.plant_code}</td>
+              </>
+            )}
+            <td>{r.yield_pct?.toFixed(2)}</td>
+            <td>{r.total_tonnage?.toFixed(2)}</td>
+            <td>{r.total_order_qty}</td>
           </tr>
-        ) : (
-          data.map((r, i) => (
-            <tr key={i} style={i % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}>
-              <td style={styles.td}>{r.pre_die_no}</td>
-              <td style={styles.td}>{r.family}</td>
-              <td style={{...styles.td, ...styles.tdHighlight, color}}>{r.yield_pct?.toFixed(2)}%</td>
-              <td style={styles.td}>{r.total_tonnage?.toFixed(2)}</td>
-              <td style={styles.td}>{r.total_order_qty}</td>
-            </tr>
-          ))
-        )}
+        ))}
       </tbody>
     </table>
   </div>
@@ -249,8 +247,6 @@ const styles = {
     padding: "6px 12px",
     borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: "600",
-    fontSize: "18px",
     boxShadow: "0 4px 12px rgba(239,68,68,0.3)",
     transition: "all 0.2s",
     display: "flex",
@@ -258,7 +254,7 @@ const styles = {
     justifyContent: "center"
   },
   closeBtnText: {
-    fontSize: "15px"
+    fontSize: "14px"
   },
   filterSection: {
     display: "flex",
@@ -465,4 +461,6 @@ const styles = {
     textAlign: "center",
     lineHeight: "1.6"
   }
+
+
 };
