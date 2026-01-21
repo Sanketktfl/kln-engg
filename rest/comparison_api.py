@@ -201,4 +201,5 @@ def _json(model, request):
         filters["year"] = request.params.get("year", current_year)
         filters["quarter"] = request.params.get("quarter", "Q1")
 
+
     return model.yield_family_comparison(filters)

@@ -220,6 +220,7 @@ const styles = {
     alignItems: "center",
     gap: "12px"
   },
+
   iconCircle: {
     width: "44px",
     height: "44px",
