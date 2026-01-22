@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 const ComparisonPopup = ({ show, onClose }) => {
 
-  const [comparisonType, setComparisonType] = useState("die");
+  const [comparisonType, setComparisonType] = useState("plan_actual");
   const [periodType, setPeriodType] = useState("month");
   const today = new Date();
   const calYear = today.getFullYear();
@@ -19,8 +20,8 @@ const ComparisonPopup = ({ show, onClose }) => {
   const [familyRight, setFamilyRight] = useState("");
   const [familyLeftData, setFamilyLeftData] = useState([]);
   const [familyRightData, setFamilyRightData] = useState([]);
+  const [targetData, setTargetData] = useState([]);
 
-  if (!show) return null;
 
   const fetchDieData = async (dieNo, setData) => {
     let url = `http://localhost:8080/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
@@ -38,6 +39,19 @@ const ComparisonPopup = ({ show, onClose }) => {
     setData(await resp.json());
   };
 
+  const fetchTargetData = async () => {
+    let url = `http://localhost:8080/internal/yield_comp_target?period_type=${periodType}`;
+    const resp = await fetch(url);
+    setTargetData(await resp.json());
+  };
+
+  useEffect(() => {
+    if (comparisonType === "plan_actual") {
+      fetchTargetData();
+    }
+  }, [comparisonType, periodType]);
+
+  if (!show) return null;
   return (
     <div style={styles.overlay}>
       <div style={styles.content}>
@@ -59,6 +73,7 @@ const ComparisonPopup = ({ show, onClose }) => {
           </select>
         </div>
 
+        {/* Period selector for all */}
         <div style={styles.toolbar}>
           <span style={styles.labelText}>Time Period</span>
           <select style={styles.selectSmall} value={periodType} onChange={e => setPeriodType(e.target.value)}>
@@ -66,27 +81,33 @@ const ComparisonPopup = ({ show, onClose }) => {
             <option value="month">Month</option>
             <option value="quarter">Quarter</option>
           </select>
-          <select style={styles.selectSmall} value={year} onChange={e => setYear(e.target.value)}>
-            {[2023, 2024, 2025, 2026].map(y => (
-              <option key={y} value={y}>{y}-{y + 1}</option>
-            ))}
-          </select>
 
-          {periodType === "month" && (
-            <select style={styles.selectSmall} value={month} onChange={e => setMonth(e.target.value)}>
-              {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          )}
+          {/* Year/Month/Quarter only for Die & Family */}
+          {comparisonType !== "plan_actual" && (
+            <>
+              <select style={styles.selectSmall} value={year} onChange={e => setYear(e.target.value)}>
+                {[2023, 2024, 2025, 2026].map(y => (
+                  <option key={y} value={y}>{y}-{y + 1}</option>
+                ))}
+              </select>
 
-          {periodType === "quarter" && (
-            <select style={styles.selectSmall} value={quarter} onChange={e => setQuarter(e.target.value)}>
-              <option value="Q1">Q1 (Apr-Jun)</option>
-              <option value="Q2">Q2 (Jul-Sep)</option>
-              <option value="Q3">Q3 (Oct-Dec)</option>
-              <option value="Q4">Q4 (Jan-Mar)</option>
-            </select>
+              {periodType === "month" && (
+                <select style={styles.selectSmall} value={month} onChange={e => setMonth(e.target.value)}>
+                  {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              )}
+
+              {periodType === "quarter" && (
+                <select style={styles.selectSmall} value={quarter} onChange={e => setQuarter(e.target.value)}>
+                  <option value="Q1">Q1 (Apr-Jun)</option>
+                  <option value="Q2">Q2 (Jul-Sep)</option>
+                  <option value="Q3">Q3 (Oct-Dec)</option>
+                  <option value="Q4">Q4 (Jan-Mar)</option>
+                </select>
+              )}
+            </>
           )}
         </div>
 
@@ -109,9 +130,18 @@ const ComparisonPopup = ({ show, onClose }) => {
         )}
 
         {comparisonType === "plan_actual" && (
-          <div style={styles.placeholderSection}>
-            <h2>Plan vs Actual</h2>
-            <p>Plan vs Actual KPIs will be implemented here.</p>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ marginBottom: 10 }}>Target vs Actual Yield (Plant-wise)</h3>
+            <ResponsiveContainer width="100%" height={450}>
+              <BarChart data={targetData}>
+                <XAxis dataKey="plant_code" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="yield_target" name="Target %" />
+                <Bar dataKey="yield_pct" name="Actual %" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         )}
 
@@ -462,6 +492,5 @@ const styles = {
     textAlign: "center",
     lineHeight: "1.6"
   }
-
 
 };

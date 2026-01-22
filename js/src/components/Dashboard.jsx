@@ -955,14 +955,14 @@ if (isLoading) {
               {/* Avg Yield */}
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardYield }}>
                 <div style={styles.kpiContent}>
-                  <div>
-                    <p style={styles.kpiLabel}>Avg Yield %</p>
-                    <p style={{ ...styles.kpiValue, color: "#065f46" }}>
-                      {kpis.avgYield}%
-                    </p>
-                  </div>
-                  <div style={{ ...styles.kpiIcon, backgroundColor: "#d1fae5" }}>
-                    📈
+                  <p style={{ ...styles.kpiValue, color: "#065f46" }}>
+                    {kpis.avgYield}%
+                  </p>
+                  <div style={styles.kpiRightColumn}>
+                    <div style={{ ...styles.kpiIcon, backgroundColor: "#d1fae5" }}>
+                      📈
+                    </div>
+                    <p style={styles.kpiLabel}>Avg Yield</p>
                   </div>
                 </div>
               </div>
@@ -970,14 +970,14 @@ if (isLoading) {
               {/* Total Dies */}
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardDies }}>
                 <div style={styles.kpiContent}>
-                  <div>
+                  <p style={{ ...styles.kpiValue, color: "#5b21b6" }}>
+                    {kpis.totalDies}
+                  </p>
+                  <div style={styles.kpiRightColumn}>
+                    <div style={{ ...styles.kpiIcon, backgroundColor: "#f1e9ff" }}>
+                      ⚙️
+                    </div>
                     <p style={styles.kpiLabel}>Total Dies</p>
-                    <p style={{ ...styles.kpiValue, color: "#5b21b6" }}>
-                      {kpis.totalDies}
-                    </p>
-                  </div>
-                  <div style={{ ...styles.kpiIcon, backgroundColor: "#f1e9ff" }}>
-                    ⚙️
                   </div>
                 </div>
               </div>
@@ -985,14 +985,14 @@ if (isLoading) {
               {/* Production */}
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardProd }}>
                 <div style={styles.kpiContent}>
-                  <div>
+                  <p style={{ ...styles.kpiValue, color: "#92400e" }}>
+                    {kpis.totalProduction}T
+                  </p>
+                  <div style={styles.kpiRightColumn}>
+                    <div style={{ ...styles.kpiIcon, backgroundColor: "#fef3c7" }}>
+                      📊
+                    </div>
                     <p style={styles.kpiLabel}>Total Production</p>
-                    <p style={{ ...styles.kpiValue, color: "#92400e" }}>
-                      {kpis.totalProduction}T
-                    </p>
-                  </div>
-                  <div style={{ ...styles.kpiIcon, backgroundColor: "#fef3c7" }}>
-                    📊
                   </div>
                 </div>
               </div>
@@ -1000,14 +1000,14 @@ if (isLoading) {
               {/* Revenue */}
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardRevenue }}>
                 <div style={styles.kpiContent}>
-                  <div>
+                  <p style={{ ...styles.kpiValue, color: "#9d174d" }}>
+                    ₹{kpis.totalRevenue}M
+                  </p>
+                  <div style={styles.kpiRightColumn}>
+                    <div style={{ ...styles.kpiIcon, backgroundColor: "#ffe4e6" }}>
+                      💵
+                    </div>
                     <p style={styles.kpiLabel}>Total Revenue</p>
-                    <p style={{ ...styles.kpiValue, color: "#9d174d" }}>
-                      ₹{kpis.totalRevenue}M
-                    </p>
-                  </div>
-                  <div style={{ ...styles.kpiIcon, backgroundColor: "#ffe4e6" }}>
-                    💵
                   </div>
                 </div>
               </div>
@@ -2215,7 +2215,7 @@ masterEditBtn: {
 
 kpiCardBase: {
   borderRadius: "14px",
-  padding: "8px 12px",
+  padding: "16px 18px",
   height: "105px",
   display: "flex",
   alignItems: "center",
@@ -2230,33 +2230,44 @@ kpiContent: {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  width: "90%",
+  width: "100%",
+  gap: "12px",
 },
 kpiLabel: {
   margin: 0,
-  fontSize: "13px",
-  fontWeight: "500",
-  color: "#475569", // slate-600
-  opacity: 0.85,
+  fontSize: "15px",
+  fontWeight: "600",
+  color: "#475569",
+  opacity: 0.75,
+  textAlign: "center",
+  whiteSpace: "nowrap",
 },
-
 kpiValue: {
   margin: 0,
-  marginTop: "3px",
-  fontSize: "24px",
-  fontWeight: "1000",
-  letterSpacing: "0.3px",
+  fontSize: "38px",
+  fontWeight: "800",
+  letterSpacing: "-1px",
+  lineHeight: "1",
+  flex: 1,
 },
 kpiIcon: {
-  width: "38px",
-  height: "38px",
-  borderRadius: "12px",
+  width: "45px",
+  height: "45px",
+  borderRadius: "10px",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  fontSize: "20px",
+  fontSize: "18px",
   boxShadow: "inset 0 0 4px rgba(0,0,0,0.08)",
   border: "1px solid rgba(255,255,255,0.7)",
+  marginBottom: "4px",
+},
+kpiRightColumn: {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-end",
+  justifyContent: "flex-start",
+  minWidth: "70px",
 },
 kpiGrid: {
   display: "flex",

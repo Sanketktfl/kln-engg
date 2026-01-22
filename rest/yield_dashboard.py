@@ -4,6 +4,7 @@ from cdb import sqlapi
 from datetime import datetime
 from collections import defaultdict
 
+
 class YieldDashboard(JsonAPI):
     pass
 
@@ -12,30 +13,27 @@ def _mount_app():
     return YieldDashboard()
 
 class YieldDashboardData:
-    def yield_dashboard(self):
-
-        sqldata=f"""SELECT SUM(total_order_qty) as total_order_qty,
+    def yearly_yield(self):
+        sqldata = """
+            SELECT SUM(total_order_qty) as total_order_qty,
                 SUM(totalDies) as totaldies,
-                SUM(total_tonnage) as total_tonnage,
-                SUM(yield_pct) as yield_pct,
+                (SUM(total_tonnage))/1000 as total_tonnage,
+                (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
                 plant_code
                 FROM prodd_yield_year_agg
-                GROUP BY plant_code
-                """
-        recordset=sqlapi.RecordSet2(sql=sqldata)
-        data = []
-        for record in recordset:
-            row_dict = {col: record[col] for col in record.keys()}
-            data.append(row_dict)
-        return data
+                WHERE financial_year = YEAR(GETDATE())
+                group by plant_code
+        """
+        recordset = sqlapi.RecordSet2(sql=sqldata)
+        return [ {col: rec[col] for col in rec.keys()} for rec in recordset ]
 
 @YieldDashboard.path(model=YieldDashboardData, path="")
 def _path():
     return YieldDashboardData()
 
-@YieldDashboard.json(model=YieldDashboardData,request_method="GET")
+@YieldDashboard.json(model=YieldDashboardData, request_method="GET")
 def _json(model, request):
-    return model.yield_dashboard()
+    return model.yearly_yield()
 
 
 #For year wise table
@@ -61,8 +59,8 @@ class YieldDashboardYearlyData:
         end_fy = current_fy_start
 
         sqldata = f"""SELECT SUM(total_order_qty) as total_order_qty,
-                SUM(totaldies) as totaldies,
-                SUM(total_tonnage) as total_tonnage,
+                SUM(totalDies) as totaldies,
+                (SUM(total_tonnage))/1000 as total_tonnage,
                 (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
                 financial_year as year
                 FROM prodd_yield_year_agg
@@ -71,9 +69,7 @@ class YieldDashboardYearlyData:
 
         if filters.get("plant_code"):
             sqldata += f"""AND plant_code = '{filters.get("plant_code")}'"""
-
         sqldata += f"""GROUP BY financial_year"""
-
         recordset = sqlapi.RecordSet2(sql=sqldata)
         data = []
         for record in recordset:
@@ -94,8 +90,6 @@ def _json(model, request):
 
 # ================= MONTHLY ==================
 
-
-#For Monthly popup
 class YieldDashboardMonthly(JsonAPI):
     pass
 
@@ -106,7 +100,14 @@ def _mount_app():
 class YieldDashboardMonthlyData:
     def yearly_yieldmonthly(self,filters=None):
 
-        sqldata="SELECT plant_code,total_order_qty,total_tonnage,yield_pct,year_month FROM prodd_yield_month_agg WHERE 1=1 "
+        sqldata = """
+            SELECT SUM(total_order_qty) as total_order_qty,
+                (SUM(total_tonnage))/1000 as total_tonnage,
+                (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
+                year_month 
+            FROM prodd_yield_month_agg
+            WHERE 1=1 
+        """
         if filters.get('year'):
             sqldata += f""" AND (
                 CASE 
@@ -117,12 +118,9 @@ class YieldDashboardMonthlyData:
             ) = '{filters.get('year')}'"""
         if filters.get('plant_code'):
             sqldata += f""" AND plant_code = '{filters.get('plant_code')}'"""
-        recordset=sqlapi.RecordSet2(sql=sqldata)
-        data = []
-        for record in recordset:
-            row_dict = {col: record[col] for col in record.keys()}
-            data.append(row_dict)
-        return data
+        sqldata += f"""GROUP BY year_month """
+        recordset = sqlapi.RecordSet2(sql=sqldata)
+        return [ {col: rec[col] for col in rec.keys()} for rec in recordset ]
 
 @YieldDashboardMonthly.path(model=YieldDashboardMonthlyData, path="")
 def _path():
@@ -137,10 +135,9 @@ def _json(model, request):
         filters['plant_code'] = request.params.get('plant_code')
     return model.yearly_yieldmonthly(filters)
 
+
 # ================= DIE-MONTH ==================
 
-
-#For DieMonth popup
 class YieldDashboardDie(JsonAPI):
     pass
 
@@ -151,7 +148,12 @@ def _mount_app():
 class YieldDashboardDieData:
     def yearly_yielddie(self,filters=None):
 
-        sqldata="SELECT plant_code,pre_die_no,total_order_qty,total_tonnage,yield_pct,family,year_month FROM prodd_yield_die_agg WHERE 1=1 "
+        sqldata = """
+            SELECT plant_code, pre_die_no, total_order_qty, (total_tonnage)/1000 as total_tonnage,
+                   yield_pct, family, year_month
+            FROM prodd_yield_die_agg
+            WHERE 1=1
+        """
         if filters.get('year'):
             sqldata += f""" AND (
                 CASE 
@@ -162,12 +164,10 @@ class YieldDashboardDieData:
             ) = '{filters['year']}'"""
         if filters.get('month'):
             sqldata += f""" AND RIGHT(year_month,2) = '{filters['month'].zfill(2)}'"""
-        recordset=sqlapi.RecordSet2(sql=sqldata)
-        data = []
-        for record in recordset:
-            row_dict = {col: record[col] for col in record.keys()}
-            data.append(row_dict)
-        return data
+        if filters.get('plant_code'):
+            sqldata += f""" AND plant_code = '{filters.get('plant_code')}' """
+        recordset = sqlapi.RecordSet2(sql=sqldata)
+        return [ {col: rec[col] for col in rec.keys()} for rec in recordset ]
 
 @YieldDashboardDie.path(model=YieldDashboardDieData, path="")
 def _path():
@@ -180,13 +180,17 @@ def _json(model, request):
         filters['year'] = request.params.get('year')
     if request.params.get('month'):
         filters['month'] = request.params.get('month')
+    if request.params.get('plant_code'):
+        filters['plant_code'] = request.params.get('plant_code')
     return model.yearly_yielddie(filters)
 
 
 
-#For Family Details
+# ================= FAMILY ==================
+
 class YieldDashboardFam(JsonAPI):
     pass
+
 @Internal.mount(app=YieldDashboardFam, path="yield_dashboard_fam")
 def _mount_app():
     return YieldDashboardFam()
@@ -194,9 +198,17 @@ def _mount_app():
 class YieldDashboardFamData:
     def yearly_yieldfam(self,filters=None):
 
-        sqldata="SELECT plant_code,total_order_qty,total_tonnage,yield_pct,family,year_month,totaldies FROM prodd_yield_fam_mnth_agg WHERE 1=1 "
+        sqldata = """
+            SELECT SUM(total_order_qty) as total_order_qty,
+                   (SUM(total_tonnage))/1000 as total_tonnage,
+                   (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
+                   family, 
+                   SUM(totaldies) as totaldies
+            FROM prodd_yield_fam_mnth_agg
+			WHERE 1=1
+        """
         if filters.get('plant_code'):
-            sqldata += f""" AND plant_code = {filters['plant_code']}"""
+            sqldata += f""" AND plant_code = '{filters['plant_code']}'"""
         if filters.get('year'):
             sqldata += f""" AND (
                 CASE 
@@ -206,13 +218,11 @@ class YieldDashboardFamData:
                 END
             ) = {filters['year']}"""
         if filters.get('month'):
-            sqldata += f""" AND RIGHT(year_month,2) = '{filters['month'].zfill(2)}'"""
-        recordset=sqlapi.RecordSet2(sql=sqldata)
-        data = []
-        for record in recordset:
-            row_dict = {col: record[col] for col in record.keys()}
-            data.append(row_dict)
-        return data
+            sqldata += f""" AND RIGHT(year_month,2) = '{filters['month']}'"""
+        sqldata += f"""GROUP BY family"""
+
+        recordset = sqlapi.RecordSet2(sql=sqldata)
+        return [ {col: rec[col] for col in rec.keys()} for rec in recordset ]
 
 @YieldDashboardFam.path(model=YieldDashboardFamData, path="")
 def _path():
@@ -231,9 +241,11 @@ def _json(model, request):
 
 
 
-#For Die Weight Details
+# ================= DIE WEIGHT ==================
+
 class YieldDashboardWt(JsonAPI):
     pass
+
 @Internal.mount(app=YieldDashboardWt, path="yield_dashboard_wt")
 def _mount_app():
     return YieldDashboardWt()
@@ -241,15 +253,17 @@ def _mount_app():
 class YieldDashboardWtData:
     def yearly_yieldwt(self,filters=None):
 
-        sqldata="SELECT plant_code,die_number,cut_wt,burr_wt,flash_slug_wt,endpc_wt,gross_wt,net_wt,null as machining_wt FROM kln_master_data"
+        sqldata = """
+            SELECT plant_code, die_number, cut_wt, burr_wt, flash_slug_wt,
+                   endpc_wt, gross_wt, net_wt, NULL AS machining_wt
+            FROM kln_master_data
+        """
+
         if filters.get('die_number'):
             sqldata += f""" WHERE die_number = '{filters['die_number']}'"""
-        recordset=sqlapi.RecordSet2(sql=sqldata)
-        data = []
-        for record in recordset:
-            row_dict = {col: record[col] for col in record.keys()}
-            data.append(row_dict)
-        return data
+
+        recordset = sqlapi.RecordSet2(sql=sqldata)
+        return [ {col: rec[col] for col in rec.keys()} for rec in recordset ]
 
 @YieldDashboardWt.path(model=YieldDashboardWtData, path="")
 def _path():
