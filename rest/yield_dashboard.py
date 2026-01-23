@@ -21,7 +21,11 @@ class YieldDashboardData:
                 (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
                 plant_code
                 FROM prodd_yield_year_agg
-                WHERE financial_year = YEAR(GETDATE())
+                WHERE CAST(LEFT(financial_year, 4) AS INT) =
+                  CASE 
+                      WHEN MONTH(GETDATE()) >= 4 THEN YEAR(GETDATE())
+                      ELSE YEAR(GETDATE()) - 1
+                  END
                 group by plant_code
         """
         recordset = sqlapi.RecordSet2(sql=sqldata)
@@ -109,13 +113,14 @@ class YieldDashboardMonthlyData:
             WHERE 1=1 
         """
         if filters.get('year'):
+            fy_start = int(filters.get('year').split('-')[0])
             sqldata += f""" AND (
                 CASE 
                     WHEN CAST(SUBSTRING(year_month,6,2) AS INT) >= 4 
                     THEN CAST(LEFT(year_month,4) AS INT)
                     ELSE CAST(LEFT(year_month,4) AS INT) - 1
                 END
-            ) = '{filters.get('year')}'"""
+            ) = {fy_start}"""
         if filters.get('plant_code'):
             sqldata += f""" AND plant_code = '{filters.get('plant_code')}'"""
         sqldata += f"""GROUP BY year_month """
@@ -279,15 +284,15 @@ def _json(model, request):
 
 
 
-#For Family Details (Financial Year + Quarter wise)
-class YieldDashboardFam(JsonAPI):
+# ================= Family Quarter Data ==================
+class YieldDashboardFamQt(JsonAPI):
     pass
 
-@Internal.mount(app=YieldDashboardFam, path="yield_dashboard_famq")
+@Internal.mount(app=YieldDashboardFamQt, path="yield_dashboard_famq")
 def _mount_app():
-    return YieldDashboardFam()
+    return YieldDashboardFamQt()
 
-class YieldDashboardFamData:
+class YieldDashboardFamQtData:
     def yearly_yieldfam(self, filters=None):
 
         sqldata = """SELECT plant_code,total_order_qty,total_tonnage,yield_pct,
@@ -329,11 +334,11 @@ class YieldDashboardFamData:
 
         return data
 
-@YieldDashboardFam.path(model=YieldDashboardFamData, path="")
+@YieldDashboardFamQt.path(model=YieldDashboardFamQtData, path="")
 def _path():
-    return YieldDashboardFamData()
+    return YieldDashboardFamQtData()
 
-@YieldDashboardFam.json(model=YieldDashboardFamData, request_method="GET")
+@YieldDashboardFamQt.json(model=YieldDashboardFamQtData, request_method="GET")
 def _json(model, request):
     filters = {}
 
@@ -351,15 +356,15 @@ def _json(model, request):
 
 
 
-#For DieMonth popup (Financial Year + Quarter wise)
-class YieldDashboardDie(JsonAPI):
+# ================= Die Quarter Data ==================
+class YieldDashboardDieQt(JsonAPI):
     pass
 
-@Internal.mount(app=YieldDashboardDie, path="yield_dashboard_dieq")
+@Internal.mount(app=YieldDashboardDieQt, path="yield_dashboard_dieq")
 def _mount_app():
-    return YieldDashboardDie()
+    return YieldDashboardDieQt()
 
-class YieldDashboardDieData:
+class YieldDashboardDieQtData:
     def yearly_yielddie(self, filters=None):
 
         sqldata = """SELECT plant_code,pre_die_no,total_order_qty,
@@ -402,11 +407,11 @@ class YieldDashboardDieData:
 
         return data
 
-@YieldDashboardDie.path(model=YieldDashboardDieData, path="")
+@YieldDashboardDieQt.path(model=YieldDashboardDieQtData, path="")
 def _path():
-    return YieldDashboardDieData()
+    return YieldDashboardDieQtData()
 
-@YieldDashboardDie.json(model=YieldDashboardDieData, request_method="GET")
+@YieldDashboardDieQt.json(model=YieldDashboardDieQtData, request_method="GET")
 def _json(model, request):
     filters = {}
 

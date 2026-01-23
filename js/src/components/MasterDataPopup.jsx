@@ -9,7 +9,6 @@ const MasterDataPopup = ({ show, onClose }) => {
   const [masterError, setMasterError] = useState("");
   const [masterRaw, setMasterRaw] = useState(null);
   const [targetPlant, setTargetPlant] = useState("");
-  const [targetYear, setTargetYear] = useState(new Date().getFullYear());
   const [targetValue, setTargetValue] = useState("");
   const [targetId, setTargetId] = useState(null);
 
@@ -38,15 +37,16 @@ const MasterDataPopup = ({ show, onClose }) => {
     kam: "",
   });
 
-  const fetchTarget = async (plant, year) => {
-    if (!plant || !year) return;
+  const fetchTarget = async (plant) => {
+    if (!plant) return;
+
 
     try {
       const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const match = data.objects.find(
-        o => o.plant_code == plant && o.target_year == year
+        o => o.plant_code == plant
       );
 
       if (match) {
@@ -62,19 +62,18 @@ const MasterDataPopup = ({ show, onClose }) => {
   };
   useEffect(() => {
     if (masterTab === "target") {
-      fetchTarget(targetPlant, targetYear);
+      fetchTarget(targetPlant);
     }
-  }, [masterTab, targetPlant, targetYear]);
+  }, [masterTab, targetPlant]);
 
   const saveTarget = async () => {
-    if (!targetPlant || !targetYear || !targetValue) {
+    if (!targetPlant || !targetValue) {
       alert("Please select plant, year and enter target");
       return;
     }
 
     const payload = {
       plant_code: Number(targetPlant),
-      target_year: Number(targetYear),
       yield_target: Number(targetValue),
     };
 
@@ -870,15 +869,6 @@ const MasterDataPopup = ({ show, onClose }) => {
                     <option value="7026">7026 (R1)</option>
                     <option value="7028">7028 (Baramati)</option>
                   </select>
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Year</label>
-                  <input
-                    type="number"
-                    style={masterStyles.masterInput}
-                    value={targetYear}
-                    onChange={(e) => setTargetYear(e.target.value)}
-                  />
                 </div>
                 <div>
                   <label style={masterStyles.masterCreateLabel}>Yield Target (%)</label>

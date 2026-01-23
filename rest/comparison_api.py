@@ -99,7 +99,7 @@ class YieldDashboardFamCompData:
         """
         # Family filter
         if filters.get("family"):
-            sqldata += f" AND family = '{filters['family']}'"
+            sqldata += f" AND UPPER(family) = UPPER('{filters['family']}')"
         # Plant filter (optional)
         if filters.get("plant_code"):
             sqldata += f" AND plant_code = {filters['plant_code']}"
@@ -189,9 +189,7 @@ class YieldDashboardTargetCompData:
             FROM kln_yield_target t
             JOIN prodd_yield_month_agg a
                 ON t.plant_code = a.plant_code
-            WHERE 
-                t.target_year = {fy}
-                AND (
+            WHERE  (
                     CASE 
                         WHEN CAST(SUBSTRING(a.year_month,6,2) AS INT) >= 4 
                         THEN CAST(LEFT(a.year_month,4) AS INT)

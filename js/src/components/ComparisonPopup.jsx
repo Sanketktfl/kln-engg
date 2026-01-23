@@ -51,6 +51,21 @@ const ComparisonPopup = ({ show, onClose }) => {
     }
   }, [comparisonType, periodType]);
 
+  const allYields = targetData.flatMap(d => [
+    Number(d.yield_target || 0),
+    Number(d.yield_pct || 0),
+  ]);
+
+  const maxY = allYields.length ? Math.max(...allYields) : 100;
+
+  // Dynamic padding (10% of max, minimum 2)
+  const padding = maxY * 0.1 || 2;
+
+  const yMin = 0;
+  const yMax = maxY + padding;
+
+
+
   if (!show) return null;
   return (
     <div style={styles.overlay}>
@@ -77,7 +92,7 @@ const ComparisonPopup = ({ show, onClose }) => {
         <div style={styles.toolbar}>
           <span style={styles.labelText}>Time Period</span>
           <select style={styles.selectSmall} value={periodType} onChange={e => setPeriodType(e.target.value)}>
-            <option value="year">Year</option>
+            <option value="year">Financial Year</option>
             <option value="month">Month</option>
             <option value="quarter">Quarter</option>
           </select>
@@ -130,16 +145,106 @@ const ComparisonPopup = ({ show, onClose }) => {
         )}
 
         {comparisonType === "plan_actual" && (
-          <div style={{ flex: 1 }}>
-            <h3 style={{ marginBottom: 10 }}>Target vs Actual Yield (Plant-wise)</h3>
-            <ResponsiveContainer width="100%" height={450}>
-              <BarChart data={targetData}>
-                <XAxis dataKey="plant_code" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="yield_target" name="Target %" />
-                <Bar dataKey="yield_pct" name="Actual %" />
+          <div style={styles.planActualContainer}>
+            <div style={styles.planActualHeader}>
+              <div>
+                <h3 style={styles.planActualTitle}>Target vs Actual Yield Performance</h3>
+                <p style={styles.planActualSubtitle}>Plant-wise comparison of planned targets against actual yields</p>
+              </div>
+              <div style={styles.statsCards}>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Avg Target</div>
+                  <div style={styles.statValue}>
+                    {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_target || 0), 0) / targetData.length).toFixed(1) : '0'}%
+                  </div>
+                </div>
+                <div style={styles.statCard}>
+                  <div style={styles.statLabel}>Avg Actual</div>
+                  <div style={styles.statValue}>
+                    {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_pct || 0), 0) / targetData.length).toFixed(1) : '0'}%
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={380}>
+              <BarChart data={targetData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }} barGap={8}>
+                <defs>
+                  <linearGradient id="targetGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                  </linearGradient>
+                  <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.7}/>
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="plant_code"
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                  stroke="#cbd5e1"
+                  strokeWidth={2}
+                />
+                <YAxis
+                  domain={[yMin, yMax]}
+                  tickFormatter={(value) => value.toFixed(2)}
+                  label={{
+                    value: 'Yield Percentage (%)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    style: { fill: '#475569', fontWeight: 600 }
+                  }}
+                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                  stroke="#cbd5e1"
+                  strokeWidth={2}
+                />
+
+
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(255, 255, 255, 0.98)',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
+                  }}
+                  labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 8, fontSize: 14 }}
+                  itemStyle={{ padding: '4px 0', fontSize: 13, fontWeight: 600 }}
+                  cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
+                />
+                <Legend
+                  verticalAlign="bottom"
+                  align="center"
+                  height={36}
+                  content={() => (
+                    <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "2px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ width: 14, height: 14, background: "#4f46e5", borderRadius: 3 }} />
+                        <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Target Yield %</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ width: 14, height: 14, background: "#059669", borderRadius: 3 }} />
+                        <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Actual Yield %</span>
+                      </div>
+                    </div>
+                  )}
+                />
+                <Bar
+                  dataKey="yield_target"
+                  name="Target Yield %"
+                  fill="url(#targetGradient)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={60}
+                />
+                <Bar
+                  dataKey="yield_pct"
+                  name="Actual Yield %"
+                  fill="url(#actualGradient)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={60}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -172,46 +277,47 @@ const Table = ({ data, color, mode }) => (
   <div style={styles.tableContainer}>
     <table style={styles.table}>
       <thead>
-        <tr style={{background: `${color}15`}}>
+        <tr style={{ background: `${color}20` }}>
           {mode === "die" ? (
             <>
-              <th>Die</th>
-              <th>Family</th>
+              <th style={styles.th}>Die</th>
+              <th style={styles.th}>Family</th>
             </>
           ) : (
             <>
-              <th>Family</th>
-              <th>Plant</th>
+              <th style={styles.th}>Family</th>
+              <th style={styles.th}>Plant</th>
             </>
           )}
-          <th>Yield %</th>
-          <th>Tonnage</th>
-          <th>Orders</th>
+          <th style={{ ...styles.th, textAlign: "right" }}>Yield %</th>
+          <th style={{ ...styles.th, textAlign: "right" }}>Tonnage</th>
+          <th style={{ ...styles.th, textAlign: "right" }}>Orders</th>
         </tr>
       </thead>
       <tbody>
         {data.map((r, i) => (
-          <tr key={i}>
+          <tr key={i} style={styles.tr}>
             {mode === "die" ? (
               <>
-                <td>{r.pre_die_no}</td>
-                <td>{r.family}</td>
+                <td style={styles.td}>{r.pre_die_no}</td>
+                <td style={styles.td}>{r.family}</td>
               </>
             ) : (
               <>
-                <td>{r.family}</td>
-                <td>{r.plant_code}</td>
+                <td style={styles.td}>{r.family}</td>
+                <td style={styles.td}>{r.plant_code}</td>
               </>
             )}
-            <td>{r.yield_pct?.toFixed(2)}</td>
-            <td>{r.total_tonnage?.toFixed(2)}</td>
-            <td>{r.total_order_qty}</td>
+            <td style={{ ...styles.td, textAlign: "right" }}>{r.yield_pct?.toFixed(2)}</td>
+            <td style={{ ...styles.td, textAlign: "right" }}>{r.total_tonnage?.toFixed(2)}</td>
+            <td style={{ ...styles.td, textAlign: "right" }}>{r.total_order_qty}</td>
           </tr>
         ))}
       </tbody>
     </table>
   </div>
 );
+
 
 export default ComparisonPopup;
 
@@ -250,7 +356,6 @@ const styles = {
     alignItems: "center",
     gap: "12px"
   },
-
   iconCircle: {
     width: "44px",
     height: "44px",
@@ -283,9 +388,6 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center"
-  },
-  closeBtnText: {
-    fontSize: "14px"
   },
   filterSection: {
     display: "flex",
@@ -324,25 +426,10 @@ const styles = {
     border: "1px solid rgba(59,130,246,0.2)",
     marginBottom: "16px"
   },
-  toolbarLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    minWidth: "140px"
-  },
-  labelIcon: {
-    fontSize: "18px"
-  },
   labelText: {
     fontSize: "14px",
     fontWeight: "600",
     color: "#1e40af"
-  },
-  toolbarGroup: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    flex: 1
   },
   selectSmall: {
     padding: "8px 12px",
@@ -381,7 +468,7 @@ const styles = {
   },
   panelTitle: {
     margin: 0,
-    fontSize: "18px",
+    fontSize: "20px",       // was 18
     fontWeight: "700"
   },
   dieInputGroup: {
@@ -389,10 +476,10 @@ const styles = {
     gap: "8px"
   },
   input: {
-    padding: "8px 14px",
+    padding: "10px 14px",
     borderRadius: "8px",
     border: "2px solid #e2e8f0",
-    fontSize: "13px",
+    fontSize: "14.5px",     // was 13
     outline: "none",
     transition: "all 0.2s",
     fontWeight: "500"
@@ -400,11 +487,11 @@ const styles = {
   compareBtn: {
     color: "white",
     border: "none",
-    padding: "8px 18px",
+    padding: "10px 20px",
     borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "600",
-    fontSize: "13px",
+    fontSize: "14.5px",     // was 13
     boxShadow: "0 2px 8px rgba(59,130,246,0.3)",
     transition: "all 0.2s"
   },
@@ -419,78 +506,86 @@ const styles = {
     borderCollapse: "separate",
     borderSpacing: 0
   },
-  tableHeader: {
-    position: "sticky",
-    top: 0,
-    zIndex: 1
-  },
-  th: {
-    padding: "12px 16px",
-    textAlign: "left",
-    fontSize: "12px",
-    fontWeight: "700",
-    color: "#475569",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-    borderBottom: "2px solid #e2e8f0"
-  },
-  tableRowEven: {
-    background: "#ffffff"
-  },
-  tableRowOdd: {
-    background: "#f8fafc"
-  },
-  td: {
-    padding: "12px 16px",
-    fontSize: "14px",
-    color: "#334155",
-    borderBottom: "1px solid #f1f5f9"
-  },
-  tdHighlight: {
-    fontWeight: "700",
-    fontSize: "15px"
-  },
-  emptyState: {
-    padding: "60px 20px",
-    textAlign: "center",
-    color: "#94a3b8",
-    fontSize: "14px"
-  },
-  emptyIcon: {
-    fontSize: "48px",
-    marginBottom: "12px",
-    opacity: 0.5
-  },
-  placeholderSection: {
+  planActualContainer: {
     flex: 1,
-    marginTop: "8px",
-    borderRadius: "14px",
-    background: "linear-gradient(135deg, #ffffff, #f8fafc)",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    boxShadow: "inset 0 2px 8px rgba(0,0,0,0.05)",
-    border: "2px dashed #cbd5e1"
+    background: "white",
+    borderRadius: "14px",
+    padding: "24px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+    border: "1px solid #e2e8f0"
   },
-  placeholderIcon: {
-    fontSize: "72px",
-    marginBottom: "20px",
-    opacity: 0.6
+  planActualHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: "24px",
+    paddingBottom: "16px",
+    borderBottom: "2px solid #f1f5f9"
   },
-  placeholderTitle: {
-    margin: "0 0 12px 0",
-    fontSize: "24px",
+  planActualTitle: {
+    margin: "0 0 6px 0",
+    fontSize: "20px",
     fontWeight: "700",
-    color: "#475569"
+    color: "#1e293b"
   },
-  placeholderText: {
+  planActualSubtitle: {
     margin: 0,
-    fontSize: "16px",
-    color: "#94a3b8",
-    maxWidth: "500px",
-    textAlign: "center",
-    lineHeight: "1.6"
-  }
+    fontSize: "13px",
+    color: "#64748b",
+    fontWeight: 500
+  },
+  statsCards: {
+    display: "flex",
+    gap: "12px"
+  },
+  statCard: {
+    background: "linear-gradient(135deg, #f8fafc, #f1f5f9)",
+    padding: "12px 20px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    minWidth: "120px",
+    textAlign: "center"
+  },
+  statLabel: {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: "4px"
+  },
+  statValue: {
+    fontSize: "22px",
+    fontWeight: "700",
+    background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text"
+  },
+  th: {
+    padding: "12px 14px",
+    fontSize: "16px",        // was 14
+    fontWeight: "700",
+    color: "#1e293b",
+    textAlign: "left",
+    borderBottom: "2px solid #e5e7eb",
+    whiteSpace: "nowrap"
+  },
+  td: {
+    padding: "12px 14px",
+    fontSize: "15px",        // was 13.5
+    fontWeight: "600",
+    color: "#334155",
+    borderBottom: "1px solid #e5e7eb",
+    whiteSpace: "nowrap"
+  },
+  tr: {
+    transition: "background 0.2s",
+    height: "44px"          // better row height
+  },
+
+
 
 };

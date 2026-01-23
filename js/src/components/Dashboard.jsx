@@ -4,8 +4,6 @@ import HighchartsReact from "highcharts-react-official";
 import DieWeightBar from "./DieWeightBar";
 import MasterDataPopup from "./MasterDataPopup";
 import ComparisonPopup from "./ComparisonPopup";
-
-
 import {
   Line,
   BarChart,
@@ -223,7 +221,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";
 
-      const fy = getFinancialYear(familyYear, familyMonth);
+      let fy = familyYear;
 
       let url = "";
       if (familyPeriodType === "month") {
@@ -310,7 +308,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ?? "";
 
-      const fy = getFinancialYear(dieYear, dieMonth);
+      const fy = dieYear;   // already financial year start
 
       let url = "";
       if (diePeriodType === "month") {
@@ -726,7 +724,8 @@ legend: {
       point: {
         events: {
           click: (e) => {
-            setSelectedYear(e.point.category);
+            const fyStart = parseInt(e.point.category.split("-")[0]);
+            setSelectedYear(fyStart);
             setShowMonthlyPopup(true);
           }
         }
@@ -742,7 +741,8 @@ legend: {
       point: {
         events: {
           click: (e) => {
-            setSelectedYear(e.point.category);
+            const fyStart = parseInt(e.point.category.split("-")[0]);
+            setSelectedYear(fyStart);
             setShowMonthlyPopup(true);
           }
         }
@@ -2337,6 +2337,4 @@ familyFilterSelect: {
   cursor: "pointer",
   boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
 },
-
-
 };
