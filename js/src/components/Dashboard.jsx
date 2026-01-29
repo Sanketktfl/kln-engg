@@ -4,6 +4,8 @@ import HighchartsReact from "highcharts-react-official";
 import DieWeightBar from "./DieWeightBar";
 import MasterDataPopup from "./MasterDataPopup";
 import ComparisonPopup from "./ComparisonPopup";
+import Base64Image from "./Base64Logo";
+
 import {
   Line,
   BarChart,
@@ -23,7 +25,7 @@ const getFinancialYear = (year, month) => {
   const m = Number(month);
   return m >= 4 ? year : year - 1;
 };
-
+const round2 = (val) => Number.parseFloat(val || 0).toFixed(2);
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -208,6 +210,18 @@ const HalfDonut = ({ value, label, target }) => {
   );
 };
 
+  const handleLogout = async () => {
+    try {
+      await fetch("https://ktflceprd.kalyanicorp.com/server/__quit__", {
+        method: "GET",
+        credentials: "include"
+      });
+      window.location.reload(); // or redirect to login if needed
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
+
 
 // 🔥 Selected die details FROM Die-wise tab (single record)
 const selectedDieFromDieTab = selectedDie
@@ -225,9 +239,9 @@ useEffect(() => {
 
       let url = "";
       if (familyPeriodType === "month") {
-        url = `http://localhost:8080/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
       } else {
-        url = `http://localhost:8080/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
       }
 
 
@@ -262,8 +276,8 @@ useEffect(() => {
 
     const aggregated = Object.values(familyMap).map(f => ({
       family: f.family,
-      avgYield: f.yieldCount ? f.yieldSum / f.yieldCount : 0,
-      totalTonnage: f.totalTonnage,
+      avgYield: Number(round2(f.yieldCount ? f.yieldSum / f.yieldCount : 0)),
+      totalTonnage: Number(round2(f.totalTonnage)),
       totalOrders: f.totalOrders,
       totalDies: f.totalDies
     }));
@@ -282,12 +296,12 @@ useEffect(() => {
 useEffect(() => {
   const fetchTargets = async () => {
     try {
-      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const map = {};
       data.objects.forEach(o => {
-        map[o.plant_code] = o.yield_target;
+        map[o.plant_code] = o.yield_target != null ? o.yield_target : 0;
       });
 
       setPlantTargets(map);   // {2101: 82.5, 7027: 82.6, ...}
@@ -312,9 +326,9 @@ useEffect(() => {
 
       let url = "";
       if (diePeriodType === "month") {
-        url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
       } else {
-        url = `http://localhost:8080/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
       }
 
       const resp = await fetch(url);
@@ -323,8 +337,8 @@ useEffect(() => {
       const formatted = data.map(item => ({
           die_no: item.pre_die_no,
           family: normalizeFamily(item.family),
-          percent_yield: item.yield_pct ?? 0,
-          tonnage: item.total_tonnage ?? 0,
+          percent_yield: Number(round2(item.yield_pct)),
+          tonnage: Number(round2(item.total_tonnage)),
           orders: item.total_order_qty ?? 0,
 
           // 🔥 IMPORTANT: split code & label
@@ -366,15 +380,15 @@ useEffect(() => {
     try {
       const plantCode = activePlant ? activePlant : "";
       const resp = await fetch(
-        `http://localhost:8080/internal/yield_dashboard_yearly?plant_code=${plantCode}`
+        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_yearly?plant_code=${plantCode}`
       );
 
       const data = await resp.json();
 
       const formatted = data.map((row) => ({
         year: String(row.year),
-        avgYield: row.yield_pct ?? 0,
-        tonnage: row.total_tonnage ?? 0,
+        avgYield: Number(round2(row.yield_pct)),
+        tonnage: Number(round2(row.total_tonnage)),
       }));
 
       setYearlyChartData(formatted);
@@ -400,7 +414,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";
 
       const fy = getFinancialYear(selectedYear, formattedMonth);
-      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -450,7 +464,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";   // numeric or empty
 
       const fy = getFinancialYear(selectedYear, selectedMonth || "04");
-      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
+      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -458,8 +472,8 @@ useEffect(() => {
       const formatted = data.map(item => ({
         month: new Date(`${item.year_month}-01`)
           .toLocaleString("en-US", { month: "short" }),   // Jan, Feb…
-        avgYield: item.yield_pct ?? 0,
-        totalProduction: item.total_tonnage ?? 0,
+        avgYield: Number(round2(item.yield_pct)),
+        totalProduction: Number(round2(item.total_tonnage)),
         totalOrderQty: item.total_order_qty ?? 0,
       }));
 
@@ -485,7 +499,7 @@ const fetchDieWeightDetails = async () => {
 
   try {
     const resp = await fetch(
-      `http://localhost:8080/internal/yield_dashboard_wt?die_number=${weightDieNo}`
+      `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_wt?die_number=${weightDieNo}`
     );
 
     if (!resp.ok) throw new Error("API failed");
@@ -516,7 +530,7 @@ const fetchDieWeightDetails = async () => {
 useEffect(() => {
   const fetchYearWiseData = async () => {
     try {
-      const resp = await fetch("http://localhost:8080/internal/yield_dashboard");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/internal/yield_dashboard");
       const result = await resp.json();
 
       // Fix null year to 2024
@@ -706,7 +720,9 @@ yAxis: [
   }
 ],
 
-tooltip: { shared: true },
+tooltip: {
+    valueDecimals: 2,
+    shared: true },
 legend: {
   layout: "horizontal",
   align: "center",
@@ -835,31 +851,37 @@ if (isLoading) {
       <div style={styles.header}>
         {/* LEFT: Logo */}
         <div style={styles.headerLeft}>
-          <img
-            src="/kalyani.iot/engg/kalyani_logo.png"
-            style={styles.headerLogo}
-          />
+          <Base64Image style={styles.headerLogo}/>
         </div>
 
         {/* CENTER: Title (TRUE CENTER) */}
         <h1 style={styles.headerTitleCentered}>
-          Manufacturing Yield Dashboard
+          Manufacturing Yield
         </h1>
 
         {/* RIGHT: Button (kept but does NOT affect centering) */}
-        <button
-          style={styles.comparisonBtn}
-          onClick={() => setShowComparisonPopup(true)}
-        >
-          📊 Comparison
-        </button>
-        <button
-          style={styles.masterEditBtn}
-          onClick={() => setShowMasterPopup(true)}
-        >
-          ✏️ Edit Data
-        </button>
+        <div style={styles.headerRight}>
+          <button
+            style={styles.comparisonBtn}
+            onClick={() => setShowComparisonPopup(true)}
+          >
+            📊 Comparison
+          </button>
 
+          <button
+            style={styles.masterEditBtn}
+            onClick={() => setShowMasterPopup(true)}
+          >
+            ✏️ Edit Data
+          </button>
+
+          <button
+            style={styles.logoutBtn}
+            onClick={handleLogout}
+          >
+            🚪 Logout
+          </button>
+        </div>
       </div>
 
       <div style={styles.plantOverviewFixed}>
@@ -891,7 +913,7 @@ if (isLoading) {
               }
               label="All Plants"
               target={Object.values(plantTargets).length
-                ? Object.values(plantTargets).reduce((a,b)=>a+b,0)/Object.values(plantTargets).length
+                ? Object.values(plantTargets).reduce((a,b)=>a+(b||0),0)/Object.values(plantTargets).length
                 : 0}
             />
           </div>
@@ -912,7 +934,7 @@ if (isLoading) {
               <HalfDonut
                 value={plant.avgYield}
                 label={plant.plant_code}
-                target={plantTargets[PLANT_REVERSE[plant.plant_code]]}
+                target={plantTargets[PLANT_REVERSE[plant.plant_code]] || 0}
               />
             </div>
           ))}
@@ -956,7 +978,7 @@ if (isLoading) {
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardYield }}>
                 <div style={styles.kpiContent}>
                   <p style={{ ...styles.kpiValue, color: "#065f46" }}>
-                    {kpis.avgYield}%
+                    { round2(kpis.avgYield) }%
                   </p>
                   <div style={styles.kpiRightColumn}>
                     <div style={{ ...styles.kpiIcon, backgroundColor: "#d1fae5" }}>
@@ -986,7 +1008,7 @@ if (isLoading) {
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardProd }}>
                 <div style={styles.kpiContent}>
                   <p style={{ ...styles.kpiValue, color: "#92400e" }}>
-                    {kpis.totalProduction}T
+                    { round2(kpis.totalProduction) }T
                   </p>
                   <div style={styles.kpiRightColumn}>
                     <div style={{ ...styles.kpiIcon, backgroundColor: "#fef3c7" }}>
@@ -1001,7 +1023,7 @@ if (isLoading) {
               <div style={{ ...styles.kpiCardBase, ...styles.kpiCardRevenue }}>
                 <div style={styles.kpiContent}>
                   <p style={{ ...styles.kpiValue, color: "#9d174d" }}>
-                    ₹{kpis.totalRevenue}M
+                    ₹{ round2(kpis.totalRevenue) }M
                   </p>
                   <div style={styles.kpiRightColumn}>
                     <div style={{ ...styles.kpiIcon, backgroundColor: "#ffe4e6" }}>
@@ -1105,8 +1127,8 @@ if (isLoading) {
                 <BarChart data={filteredDieApiData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="die_no" />
-                  <YAxis />
-                  <Tooltip />
+                  <YAxis tickFormatter={(v) => round2(v)} />
+                  <Tooltip formatter={(v) => round2(v)} />
                   <Legend />
                   <Bar
                     dataKey="percent_yield"
@@ -1174,10 +1196,10 @@ if (isLoading) {
                                     ? styles.warningBadge
                                     : styles.criticalBadge)
                               }}>
-                                {item.percent_yield.toFixed(2)}%
+                                {round2(item.percent_yield)}%
                               </span>
                             </td>
-                            <td style={styles.td}>{item.tonnage.toFixed(2)}T</td>
+                            <td style={styles.td}>{round2(item.tonnage)}T</td>
                             <td style={styles.td}>₹{((item.revenue)||0).toFixed(0)}M</td>
                             <td style={styles.td}>{item.orders.toLocaleString()}</td>
                             <td style={styles.td}>
@@ -1290,8 +1312,8 @@ if (isLoading) {
                 <BarChart data={filteredFamilyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="family" />
-                  <YAxis />
-                  <Tooltip />
+                  <YAxis tickFormatter={(v) => round2(v)} />
+                  <Tooltip formatter={(v) => round2(v)} />
                   <Legend />
                   <Bar
                       dataKey="avgYield"
@@ -1360,11 +1382,11 @@ if (isLoading) {
                                     : styles.criticalBadge),
                                 }}
                               >
-                                {row.avgYield.toFixed(2)}%
+                                {round2(row.avgYield)}%
                               </span>
                             </td>
 
-                            <td style={styles.td}>{row.totalTonnage.toFixed(2)}T</td>
+                            <td style={styles.td}>{round2(row.totalTonnage)}T</td>
 
                             <td style={styles.td}>₹{((row.totalOrders / 1000) || 0).toFixed(0)}M</td>
 
@@ -1466,15 +1488,15 @@ if (isLoading) {
                           <tbody>
                             <tr>
                               <td style={styles.summaryTableThTd}>
-                                {(
+                                {round2(
                                   monthlyDataForYear.reduce((sum, item) => sum + item.avgYield, 0) /
                                   monthlyDataForYear.length
-                                ).toFixed(2)}%
+                                )}%
                               </td>
                               <td style={styles.summaryTableThTd}>
-                                {monthlyDataForYear
-                                  .reduce((sum, item) => sum + item.totalProduction, 0)
-                                  .toFixed(1)}T
+                                {round2(
+                                  monthlyDataForYear.reduce((sum, item) => sum + item.totalProduction, 0)
+                                )}T
                               </td>
                               <td style={styles.summaryTableThTd}>
                                 {
@@ -1568,11 +1590,13 @@ if (isLoading) {
                             <XAxis dataKey="family" />
                             <YAxis yAxisId="left" />
                             <YAxis yAxisId="right" orientation="right" />
-                            <Tooltip formatter={(value, name, props) => {
-                                if (name === "percent_yield") return [`${value.toFixed(2)}%`, "Yield"];
-                                if (name === "tonnage") return [`${value.toFixed(2)}T`, "Production"];
-                                return [value, props.payload.family];
-                            }} />
+                            <Tooltip
+                              formatter={(value, name) => {
+                                if (name === "avgYield") return [`${round2(value)}%`, "Yield"];
+                                if (name === "totalProduction") return [`${round2(value)} T`, "Production"];
+                                return [round2(value), name];
+                              }}
+                            />
                             <Legend />
                             <Bar dataKey="avgYield" yAxisId="left" name="Avg Yield %" fill="#8b5cf6" />
                             <Bar dataKey="totalProduction" yAxisId="right" name="Production (T)" fill="#10b981" />
@@ -1642,17 +1666,36 @@ if (isLoading) {
                         <BarChart data={dieMonthlyApiData || []}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="die_no" />
-                          <YAxis yAxisId="left" />
-                          <YAxis yAxisId="right" orientation="right" />
-                          <Tooltip formatter={(value, name, props) => [
-                               name === "percent_yield" ? `${value.toFixed(2)}%` :
-                               name === "tonnage" ? `${value.toFixed(2)}T` :
-                               value,
-                               `${props.payload.family}`
-                            ]} />
+                          <YAxis
+                            yAxisId="left"
+                            tickFormatter={(v) => round2(v)}
+                          />
+                          <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            tickFormatter={(v) => round2(v)}
+                          />
+                          <Tooltip
+                            formatter={(value, dataKey) => {
+                              if (dataKey === "percent_yield") return [`${round2(value)}%`, "Yield %"];
+                              if (dataKey === "tonnage") return [`${round2(value)} T`, "Production"];
+                              return [round2(value), dataKey];
+                            }}
+                            labelFormatter={(label) => `Die: ${label}`}
+                          />
                           <Legend />
-                          <Bar dataKey="percent_yield" yAxisId="left" name="Yield %" fill="#8b5cf6" />
-                          <Bar dataKey="tonnage" yAxisId="right" name="Production (T)" fill="#10b981" />
+                          <Bar
+                            dataKey="percent_yield"
+                            yAxisId="left"
+                            name="Yield %"
+                            fill="#8b5cf6"
+                          />
+                          <Bar
+                            dataKey="tonnage"
+                            yAxisId="right"
+                            name="Production (T)"
+                            fill="#10b981"
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1676,8 +1719,8 @@ if (isLoading) {
                               <tr key={idx}>
                                 <td style={styles.summaryTableThTd}>{item.die_no}</td>
                                 <td style={styles.summaryTableThTd}>{item.family}</td>
-                                <td style={styles.summaryTableThTd}>{item.percent_yield.toFixed(2)}%</td>
-                                <td style={styles.summaryTableThTd}>{item.tonnage.toFixed(2)}T</td>
+                                <td style={styles.summaryTableThTd}>{round2(item.percent_yield)}%</td>
+                                <td style={styles.summaryTableThTd}>{round2(item.tonnage)} T</td>
                                 <td style={styles.summaryTableThTd}>{item.orders || 0}</td>
                               </tr>
                             ))}
@@ -1800,25 +1843,28 @@ const styles = {
 header: {
   top: 0,
   zIndex: 1000,
+  height: "46px",
   width: "100%",
   background: "linear-gradient(90deg, #38bdf8, #0ea5e9)",
-  padding: "7px 18px",
+  padding: "0px 16px",
   borderRadius: "10px",
   marginBottom: "5px",
   boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
   display: "flex",
-  alignItems: "center",
-  position: "relative",   // 🔥 IMPORTANT
+  alignItems: "center",   // vertical centering
+  position: "relative",
+  overflow: "hidden"    // prevents content from stretching it
 },
 headerLeft: {
   display: "flex",
   alignItems: "center",
   gap: "10px",
+  height: "100%",
 },
 
 headerLogo: {
-  width: "24px",
-  height: "24px",
+  width: "60px",
+  height: "60px",
   objectFit: "contain",
   borderRadius: "6px",
 },
@@ -2198,19 +2244,15 @@ kpiCardRevenue: {
 },
 
 masterEditBtn: {
-  position: "absolute",
-  top: "4px",
-  right: "10px",
   background: "#dbeafe",
   color: "#4f46e5",
-  padding: "5px 10px",        // smaller padding
-  borderRadius: "3px",        // smaller rounded corner
+  padding: "5px 10px",
+  borderRadius: "3px",
   border: "none",
-  fontSize: "13px",           // smaller text size
+  fontSize: "13px",
   fontWeight: "500",
   cursor: "pointer",
   boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-  zIndex: 10,
 },
 
 kpiCardBase: {
@@ -2324,17 +2366,36 @@ familyFilterSelect: {
   cursor: "pointer",
 },
   comparisonBtn: {
-  position: "absolute",
-  top: "4px",
-  right: "115px",   // just left of Edit Data
-  background: "#ecfeff",
-  color: "#0f766e",
-  padding: "5px 10px",
-  borderRadius: "3px",
-  border: "none",
-  fontSize: "13px",
-  fontWeight: "500",
-  cursor: "pointer",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-},
+    background: "#ecfeff",
+    color: "#0f766e",
+    padding: "5px 10px",
+    borderRadius: "3px",
+    border: "none",
+    fontSize: "13px",
+    fontWeight: "500",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+  },
+  logoutBtn: {
+    background: "#fee2e2",
+    color: "#b91c1c",
+    padding: "5px 10px",
+    borderRadius: "3px",
+    border: "none",
+    fontSize: "13px",
+    fontWeight: "500",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+  },
+  headerRight: {
+    position: "absolute",
+    right: "10px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+  },
+
+
 };

@@ -184,7 +184,6 @@ class YieldDashboardTargetCompData:
             SELECT 
                 t.plant_code,
                 t.yield_target,
-                t.target_year,
                 AVG(a.yield_pct) AS yield_pct
             FROM kln_yield_target t
             JOIN prodd_yield_month_agg a
@@ -213,8 +212,7 @@ class YieldDashboardTargetCompData:
         sqldata += """
             GROUP BY 
                 t.plant_code, 
-                t.yield_target, 
-                t.target_year
+                t.yield_target 
             ORDER BY t.plant_code
         """
         recordset = sqlapi.RecordSet2(sql=sqldata)

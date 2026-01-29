@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(";").shift();
+  return null;
+};
+
 const MasterDataPopup = ({ show, onClose }) => {
 
   const [masterTab, setMasterTab] = useState("edit"); // "edit" | "create"
@@ -42,7 +49,7 @@ const MasterDataPopup = ({ show, onClose }) => {
 
 
     try {
-      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const match = data.objects.find(
@@ -68,7 +75,7 @@ const MasterDataPopup = ({ show, onClose }) => {
 
   const saveTarget = async () => {
     if (!targetPlant || !targetValue) {
-      alert("Please select plant, year and enter target");
+      alert("Please select plant and enter target");
       return;
     }
 
@@ -78,7 +85,7 @@ const MasterDataPopup = ({ show, onClose }) => {
     };
 
     try {
-      const authOptions = await getAuthHeadersWithCSRF("POST");
+      const authOptions = await getAuthHeadersWithCSRF_Target();
 
       if (targetId) {
         // UPDATE
@@ -90,11 +97,14 @@ const MasterDataPopup = ({ show, onClose }) => {
         alert("Target updated successfully");
       } else {
         // CREATE
-        await fetch("http://localhost:8080/api/v1/collection/kln_yield_target", {
-          method: "POST",
-          ...authOptions,
-          body: JSON.stringify(payload),
-        });
+        await fetch(
+          "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target",
+          {
+            method: "POST",
+            ...authOptions,
+            body: JSON.stringify(payload),
+          }
+        );
         alert("Target created successfully");
       }
     } catch (e) {
@@ -102,6 +112,7 @@ const MasterDataPopup = ({ show, onClose }) => {
       alert("Failed to save target");
     }
   };
+
 
   const fetchMasterRecord = async () => {
     if (!masterSearchNo.trim()) {
@@ -114,7 +125,7 @@ const MasterDataPopup = ({ show, onClose }) => {
 
     try {
       const filter = encodeURIComponent(`die_number eq '${masterSearchNo}'`);
-      const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
+      const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -163,27 +174,27 @@ const MasterDataPopup = ({ show, onClose }) => {
     });
 
     try {
-        const authOptions = await getAuthHeadersWithCSRF("POST");
-      const resp = await fetch(url, {
-        method: "PUT",
-        ...authOptions,
-        body: JSON.stringify(payload),
-      });
+        const authOptions = await getAuthHeadersWithCSRF("PUT");
+        const resp = await fetch(url, {
+          method: "PUT",
+          ...authOptions,
+          body: JSON.stringify(payload),
+        });
 
-      if (!resp.ok) throw new Error("Update failed");
+        if (!resp.ok) throw new Error("Update failed");
 
-      alert("Master Data Updated Successfully!");
+        alert("Master Data Updated Successfully!");
 
-      // CLEAR FORM BUT KEEP POPUP OPEN
-      setMasterResult(null);     // empty UI form
-      setMasterRaw(null);        // clear raw
-      setMasterSearchNo("");     // clear search box
+        // CLEAR FORM BUT KEEP POPUP OPEN
+        setMasterResult(null);     // empty UI form
+        setMasterRaw(null);        // clear raw
+        setMasterSearchNo("");     // clear search box
 
-    } catch (err) {
-      console.error("Update error:", err);
-      alert("Failed to update master data");
-    }
-  };
+      } catch (err) {
+        console.error("Update error:", err);
+        alert("Failed to update master data");
+      }
+    };
 
   const createMasterRecord = async () => {
     const payload = { ...createForm };
@@ -205,7 +216,7 @@ const MasterDataPopup = ({ show, onClose }) => {
     try {
         const authOptions = await getAuthHeadersWithCSRF("POST");
       const resp = await fetch(
-        "http://localhost:8080/api/v1/collection/kln_master_data",
+        "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data",
         {
           method: "POST",
           ...authOptions,
@@ -250,9 +261,9 @@ const MasterDataPopup = ({ show, onClose }) => {
   };
 
   const getAuthHeadersWithCSRF = async (method = "GET", contentType = true) => {
-    const credentials = btoa("kalyaniadmin:kalyaniadmin@7001");
+    const credentials = btoa("caddok:");
     // Step 1: Trigger cookie set
-    await fetch("http://localhost:8080/api/v1/collection/kln_master_data", {
+    await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data", {
       method: "GET",
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -260,15 +271,15 @@ const MasterDataPopup = ({ show, onClose }) => {
       credentials: "include",
     });
 
-    // const csrfToken = getCookie("CSRFToken");
-    // console.log("Fetched CSRF Token from cookie:", csrfToken);
-    // if (!csrfToken) {
-    //   throw new Error("CSRF token not found in cookies.");
-    // }
+    const csrfToken = getCookie("CSRFToken");
+    console.log("Fetched CSRF Token from cookie:", csrfToken);
+    if (!csrfToken) {
+      throw new Error("CSRF token not found in cookies.");
+    }
 
     const headers = {
       Authorization: `Basic ${credentials}`,
-      // "X-CSRF-Token": csrfToken,
+      "X-CSRF-Token": csrfToken,
     };
 
     if (contentType) {
@@ -280,6 +291,35 @@ const MasterDataPopup = ({ show, onClose }) => {
       credentials: "include",
     };
   };
+
+  const getAuthHeadersWithCSRF_Target = async () => {
+  const credentials = btoa("caddok:");
+
+  // 🔹 Trigger CSRF cookie for TARGET collection
+  await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target", {
+    method: "GET",
+    headers: {
+      Authorization: `Basic ${credentials}`,
+    },
+    credentials: "include",
+  });
+
+  const csrfToken = getCookie("CSRFToken");
+  if (!csrfToken) throw new Error("CSRF token not found");
+
+  const headers = {
+    Authorization: `Basic ${credentials}`,
+    "X-CSRF-Token": csrfToken,
+    "Content-Type": "application/json",
+    "If-Match": "*",   // 🔴 mandatory for PUT / POST in CONTACT
+  };
+
+  return {
+    headers,
+    credentials: "include",
+  };
+};
+
 
   const numericFields = [
     "cut_wt",

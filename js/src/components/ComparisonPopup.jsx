@@ -24,7 +24,7 @@ const ComparisonPopup = ({ show, onClose }) => {
 
 
   const fetchDieData = async (dieNo, setData) => {
-    let url = `http://localhost:8080/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -32,7 +32,7 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchFamilyData = async (family, setData) => {
-    let url = `http://localhost:8080/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -40,9 +40,10 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchTargetData = async () => {
-    let url = `http://localhost:8080/internal/yield_comp_target?period_type=${periodType}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_target?period_type=${periodType}`;
     const resp = await fetch(url);
-    setTargetData(await resp.json());
+    const data = await resp.json();
+    setTargetData(Array.isArray(data) ? data : []);
   };
 
   useEffect(() => {
@@ -51,7 +52,9 @@ const ComparisonPopup = ({ show, onClose }) => {
     }
   }, [comparisonType, periodType]);
 
-  const allYields = targetData.flatMap(d => [
+  const safeTargetArray = Array.isArray(targetData) ? targetData : [];
+
+  const allYields = safeTargetArray.flatMap(d => [
     Number(d.yield_target || 0),
     Number(d.yield_pct || 0),
   ]);
@@ -63,7 +66,6 @@ const ComparisonPopup = ({ show, onClose }) => {
 
   const yMin = 0;
   const yMax = maxY + padding;
-
 
 
   if (!show) return null;
@@ -84,7 +86,7 @@ const ComparisonPopup = ({ show, onClose }) => {
           <select style={styles.select} value={comparisonType} onChange={e => setComparisonType(e.target.value)}>
             <option value="die">Die-wise Analysis</option>
             <option value="family">Family-wise Analysis</option>
-            <option value="plan_actual">Plan vs Actual</option>
+            <option value="plan_actual">Target vs Actual</option>
           </select>
         </div>
 
