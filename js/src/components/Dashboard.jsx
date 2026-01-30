@@ -212,7 +212,7 @@ const HalfDonut = ({ value, label, target }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch("https://ktflceprd.kalyanicorp.com/server/__quit__", {
+      await fetch("http://localhost:8080/server/__quit__", {
         method: "GET",
         credentials: "include"
       });
@@ -225,7 +225,10 @@ const HalfDonut = ({ value, label, target }) => {
 
 // 🔥 Selected die details FROM Die-wise tab (single record)
 const selectedDieFromDieTab = selectedDie
-  ? dieApiData.find((d) => d.die_no === selectedDie)
+  ? (
+      dieApiData.find(d => d.die_no === selectedDie) ||
+      dieMonthlyApiData.find(d => d.die_no === selectedDie)
+    )
   : null;
 
 useEffect(() => {
@@ -239,9 +242,9 @@ useEffect(() => {
 
       let url = "";
       if (familyPeriodType === "month") {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
       } else {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
       }
 
 
@@ -296,7 +299,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchTargets = async () => {
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
+      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const map = {};
@@ -326,9 +329,9 @@ useEffect(() => {
 
       let url = "";
       if (diePeriodType === "month") {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
       } else {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
       }
 
       const resp = await fetch(url);
@@ -380,7 +383,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ? activePlant : "";
       const resp = await fetch(
-        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_yearly?plant_code=${plantCode}`
+        `http://localhost:8080/internal/yield_dashboard_yearly?plant_code=${plantCode}`
       );
 
       const data = await resp.json();
@@ -414,7 +417,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";
 
       const fy = getFinancialYear(selectedYear, formattedMonth);
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -464,7 +467,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";   // numeric or empty
 
       const fy = getFinancialYear(selectedYear, selectedMonth || "04");
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -499,7 +502,7 @@ const fetchDieWeightDetails = async () => {
 
   try {
     const resp = await fetch(
-      `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_wt?die_number=${weightDieNo}`
+      `http://localhost:8080/internal/yield_dashboard_wt?die_number=${weightDieNo}`
     );
 
     if (!resp.ok) throw new Error("API failed");
@@ -530,7 +533,7 @@ const fetchDieWeightDetails = async () => {
 useEffect(() => {
   const fetchYearWiseData = async () => {
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/internal/yield_dashboard");
+      const resp = await fetch("http://localhost:8080/internal/yield_dashboard");
       const result = await resp.json();
 
       // Fix null year to 2024
@@ -577,10 +580,6 @@ const dataToUse = activePlant
   const totalProduction = dataToUse.reduce((sum, r) => sum + r.tonnage, 0);
   const totalYield = dataToUse.reduce((sum, r) => sum + r.avgYield, 0);
   const totalRevenue = dataToUse.reduce((sum, r) => sum + (r.revenue || 0), 0);
-
-  const selectedDieFromDieTab = selectedDie
-  ? dieApiData.find(d => d.die_no === selectedDie)
-  : null;
 
 
   setKpis({
@@ -893,8 +892,6 @@ if (isLoading) {
               Clear
             </button>
           )}
-
-
         <div style={styles.cardGrid}>
 
           {/* ALL PLANTS */}
@@ -912,9 +909,14 @@ if (isLoading) {
                   : 0
               }
               label="All Plants"
-              target={Object.values(plantTargets).length
-                ? Object.values(plantTargets).reduce((a,b)=>a+(b||0),0)/Object.values(plantTargets).length
-                : 0}
+              target={
+                Object.values(plantTargets).length ? Number(
+                  round2(
+                    Object.values(plantTargets).reduce((a, b) => a + (b || 0), 0) /
+                    Object.values(plantTargets).length
+                  )
+                ) : 0
+              }
             />
           </div>
 
@@ -1689,12 +1691,16 @@ if (isLoading) {
                             yAxisId="left"
                             name="Yield %"
                             fill="#8b5cf6"
+                            cursor="pointer"
+                            onClick={(e) => handleDieClick(e?.payload?.die_no)}
                           />
                           <Bar
                             dataKey="tonnage"
                             yAxisId="right"
                             name="Production (T)"
                             fill="#10b981"
+                            cursor="pointer"
+                            onClick={(e) => handleDieClick(e?.payload?.die_no)}
                           />
                         </BarChart>
                       </ResponsiveContainer>

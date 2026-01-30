@@ -24,7 +24,7 @@ const ComparisonPopup = ({ show, onClose }) => {
 
 
   const fetchDieData = async (dieNo, setData) => {
-    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
+    let url = `http://localhost:8080/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -32,7 +32,7 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchFamilyData = async (family, setData) => {
-    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
+    let url = `http://localhost:8080/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -40,7 +40,7 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchTargetData = async () => {
-    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_target?period_type=${periodType}`;
+    let url = `http://localhost:8080/internal/yield_comp_target?period_type=${periodType}`;
     const resp = await fetch(url);
     const data = await resp.json();
     setTargetData(Array.isArray(data) ? data : []);
@@ -81,177 +81,198 @@ const ComparisonPopup = ({ show, onClose }) => {
           <button style={styles.closeBtn} onClick={onClose}>Close</button>
         </div>
 
-        <div style={styles.filterSection}>
-          <label style={styles.label}>Comparison Type</label>
-          <select style={styles.select} value={comparisonType} onChange={e => setComparisonType(e.target.value)}>
-            <option value="die">Die-wise Analysis</option>
-            <option value="family">Family-wise Analysis</option>
-            <option value="plan_actual">Target vs Actual</option>
-          </select>
-        </div>
+        <div style={styles.filterRow}>
+          {/* LEFT: Comparison Type */}
+          <div style={styles.filterLeft}>
+            <label style={styles.label}>Comparison Type</label>
+            <select
+              style={styles.select}
+              value={comparisonType}
+              onChange={e => setComparisonType(e.target.value)}
+            >
+              <option value="die">Die-wise Analysis</option>
+              <option value="family">Family-wise Analysis</option>
+              <option value="plan_actual">Target vs Actual</option>
+            </select>
+          </div>
 
-        {/* Period selector for all */}
-        <div style={styles.toolbar}>
-          <span style={styles.labelText}>Time Period</span>
-          <select style={styles.selectSmall} value={periodType} onChange={e => setPeriodType(e.target.value)}>
-            <option value="year">Financial Year</option>
-            <option value="month">Month</option>
-            <option value="quarter">Quarter</option>
-          </select>
-
-          {/* Year/Month/Quarter only for Die & Family */}
-          {comparisonType !== "plan_actual" && (
-            <>
-              <select style={styles.selectSmall} value={year} onChange={e => setYear(e.target.value)}>
-                {[2023, 2024, 2025, 2026].map(y => (
-                  <option key={y} value={y}>{y}-{y + 1}</option>
-                ))}
-              </select>
-
-              {periodType === "month" && (
-                <select style={styles.selectSmall} value={month} onChange={e => setMonth(e.target.value)}>
-                  {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
-                    <option key={m} value={m}>{m}</option>
+          {/* RIGHT: Other Filters */}
+          <div style={styles.filterRight}>
+            <span style={styles.labelText}>Time Period</span>
+            <select
+              style={styles.selectSmall}
+              value={periodType}
+              onChange={e => setPeriodType(e.target.value)}
+            >
+              <option value="year">Financial Year</option>
+              <option value="month">Month</option>
+              <option value="quarter">Quarter</option>
+            </select>
+            {comparisonType !== "plan_actual" && (
+              <>
+                <select
+                  style={styles.selectSmall}
+                  value={year}
+                  onChange={e => setYear(e.target.value)}
+                >
+                  {[2023, 2024, 2025, 2026].map(y => (
+                    <option key={y} value={y}>{y}-{y + 1}</option>
                   ))}
                 </select>
-              )}
-
-              {periodType === "quarter" && (
-                <select style={styles.selectSmall} value={quarter} onChange={e => setQuarter(e.target.value)}>
-                  <option value="Q1">Q1 (Apr-Jun)</option>
-                  <option value="Q2">Q2 (Jul-Sep)</option>
-                  <option value="Q3">Q3 (Oct-Dec)</option>
-                  <option value="Q4">Q4 (Jan-Mar)</option>
-                </select>
-              )}
-            </>
-          )}
+                {periodType === "month" && (
+                  <select
+                    style={styles.selectSmall}
+                    value={month}
+                    onChange={e => setMonth(e.target.value)}
+                  >
+                    {["04","05","06","07","08","09","10","11","12","01","02","03"].map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                )}
+                {periodType === "quarter" && (
+                  <select
+                    style={styles.selectSmall}
+                    value={quarter}
+                    onChange={e => setQuarter(e.target.value)}
+                  >
+                    <option value="Q1">Q1 (Apr–Jun)</option>
+                    <option value="Q2">Q2 (Jul–Sep)</option>
+                    <option value="Q3">Q3 (Oct–Dec)</option>
+                    <option value="Q4">Q4 (Jan–Mar)</option>
+                  </select>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
-        {comparisonType === "die" && (
-          <div style={styles.splitVertical}>
-            <ComparePanel title="Die A" color="#3b82f6" value={dieLeft} setValue={setDieLeft}
-              data={leftData} onCompare={() => fetchDieData(dieLeft, setLeftData)} mode="die" />
-            <ComparePanel title="Die B" color="#8b5cf6" value={dieRight} setValue={setDieRight}
-              data={rightData} onCompare={() => fetchDieData(dieRight, setRightData)} mode="die" />
-          </div>
-        )}
-
-        {comparisonType === "family" && (
-          <div style={styles.splitVertical}>
-            <ComparePanel title="Family A" color="#16a34a" value={familyLeft} setValue={setFamilyLeft}
-              data={familyLeftData} onCompare={() => fetchFamilyData(familyLeft, setFamilyLeftData)} mode="family" />
-            <ComparePanel title="Family B" color="#0ea5e9" value={familyRight} setValue={setFamilyRight}
-              data={familyRightData} onCompare={() => fetchFamilyData(familyRight, setFamilyRightData)} mode="family" />
-          </div>
-        )}
-
-        {comparisonType === "plan_actual" && (
-          <div style={styles.planActualContainer}>
-            <div style={styles.planActualHeader}>
-              <div>
-                <h3 style={styles.planActualTitle}>Target vs Actual Yield Performance</h3>
-                <p style={styles.planActualSubtitle}>Plant-wise comparison of planned targets against actual yields</p>
-              </div>
-              <div style={styles.statsCards}>
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Avg Target</div>
-                  <div style={styles.statValue}>
-                    {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_target || 0), 0) / targetData.length).toFixed(1) : '0'}%
-                  </div>
-                </div>
-                <div style={styles.statCard}>
-                  <div style={styles.statLabel}>Avg Actual</div>
-                  <div style={styles.statValue}>
-                    {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_pct || 0), 0) / targetData.length).toFixed(1) : '0'}%
-                  </div>
-                </div>
-              </div>
+        {/* MAIN BODY (takes remaining height) */}
+        <div style={styles.comparisonBody}>
+          {comparisonType === "die" && (
+            <div style={styles.splitVertical}>
+              <ComparePanel title="Die A" color="#3b82f6" value={dieLeft} setValue={setDieLeft}
+                data={leftData} onCompare={() => fetchDieData(dieLeft, setLeftData)} mode="die" />
+              <ComparePanel title="Die B" color="#8b5cf6" value={dieRight} setValue={setDieRight}
+                data={rightData} onCompare={() => fetchDieData(dieRight, setRightData)} mode="die" />
             </div>
-            <ResponsiveContainer width="100%" height={380}>
-              <BarChart data={targetData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }} barGap={8}>
-                <defs>
-                  <linearGradient id="targetGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
-                    <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7}/>
-                  </linearGradient>
-                  <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
-                    <stop offset="100%" stopColor="#059669" stopOpacity={0.7}/>
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="plant_code"
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
-                  stroke="#cbd5e1"
-                  strokeWidth={2}
-                />
-                <YAxis
-                  domain={[yMin, yMax]}
-                  tickFormatter={(value) => value.toFixed(2)}
-                  label={{
-                    value: 'Yield Percentage (%)',
-                    angle: -90,
-                    position: 'insideLeft',
-                    style: { fill: '#475569', fontWeight: 600 }
-                  }}
-                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
-                  stroke="#cbd5e1"
-                  strokeWidth={2}
-                />
+          )}
 
+          {comparisonType === "family" && (
+            <div style={styles.splitVertical}>
+              <ComparePanel title="Family A" color="#16a34a" value={familyLeft} setValue={setFamilyLeft}
+                data={familyLeftData} onCompare={() => fetchFamilyData(familyLeft, setFamilyLeftData)} mode="family" />
+              <ComparePanel title="Family B" color="#0ea5e9" value={familyRight} setValue={setFamilyRight}
+                data={familyRightData} onCompare={() => fetchFamilyData(familyRight, setFamilyRightData)} mode="family" />
+            </div>
+          )}
 
-                <Tooltip
-                  contentStyle={{
-                    background: 'rgba(255, 255, 255, 0.98)',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '12px 16px',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
-                  }}
-                  labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 8, fontSize: 14 }}
-                  itemStyle={{ padding: '4px 0', fontSize: 13, fontWeight: 600 }}
-                  cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  align="center"
-                  height={36}
-                  content={() => (
-                    <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "2px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ width: 14, height: 14, background: "#4f46e5", borderRadius: 3 }} />
-                        <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Target Yield %</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ width: 14, height: 14, background: "#059669", borderRadius: 3 }} />
-                        <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Actual Yield %</span>
-                      </div>
+          {comparisonType === "plan_actual" && (
+            <div style={styles.planActualContainer}>
+              <div style={styles.planActualHeader}>
+                <div>
+                  <h3 style={styles.planActualTitle}>Target vs Actual Yield Performance</h3>
+                  <p style={styles.planActualSubtitle}>Plant-wise comparison of planned targets against actual yields</p>
+                </div>
+                <div style={styles.statsCards}>
+                  <div style={styles.statCard}>
+                    <div style={styles.statLabel}>Avg Target</div>
+                    <div style={styles.statValue}>
+                      {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_target || 0), 0) / targetData.length).toFixed(1) : '0'}%
                     </div>
-                  )}
-                />
-                <Bar
-                  dataKey="yield_target"
-                  name="Target Yield %"
-                  fill="url(#targetGradient)"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={60}
-                />
-                <Bar
-                  dataKey="yield_pct"
-                  name="Actual Yield %"
-                  fill="url(#actualGradient)"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={60}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+                  </div>
+                  <div style={styles.statCard}>
+                    <div style={styles.statLabel}>Avg Actual</div>
+                    <div style={styles.statValue}>
+                      {targetData.length > 0 ? (targetData.reduce((sum, d) => sum + (d.yield_pct || 0), 0) / targetData.length).toFixed(1) : '0'}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={380}>
+                <BarChart data={targetData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }} barGap={8}>
+                  <defs>
+                    <linearGradient id="targetGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                    </linearGradient>
+                    <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                      <stop offset="100%" stopColor="#059669" stopOpacity={0.7}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="plant_code"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }}
+                    stroke="#cbd5e1"
+                    strokeWidth={2}
+                  />
+                  <YAxis
+                    domain={[yMin, yMax]}
+                    tickFormatter={(value) => value.toFixed(2)}
+                    label={{
+                      value: 'Yield Percentage (%)',
+                      angle: -90,
+                      position: 'insideLeft',
+                      style: { fill: '#475569', fontWeight: 600 }
+                    }}
+                    tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                    stroke="#cbd5e1"
+                    strokeWidth={2}
+                  />
 
+
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255, 255, 255, 0.98)',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '12px 16px',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.15)'
+                    }}
+                    labelStyle={{ fontWeight: 700, color: '#1e293b', marginBottom: 8, fontSize: 14 }}
+                    itemStyle={{ padding: '4px 0', fontSize: 13, fontWeight: 600 }}
+                    cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
+                  />
+                  <Legend
+                    verticalAlign="bottom"
+                    align="center"
+                    height={36}
+                    content={() => (
+                      <div style={{ display: "flex", justifyContent: "center", gap: "24px", marginTop: "2px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ width: 14, height: 14, background: "#4f46e5", borderRadius: 3 }} />
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Target Yield %</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <span style={{ width: 14, height: 14, background: "#059669", borderRadius: 3 }} />
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#334155" }}>Actual Yield %</span>
+                        </div>
+                      </div>
+                    )}
+                  />
+                  <Bar
+                    dataKey="yield_target"
+                    name="Target Yield %"
+                    fill="url(#targetGradient)"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={60}
+                  />
+                  <Bar
+                    dataKey="yield_pct"
+                    name="Actual Yield %"
+                    fill="url(#actualGradient)"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={60}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -343,7 +364,8 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     boxShadow: "0 30px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.5)",
-    border: "1px solid rgba(255,255,255,0.8)"
+    border: "1px solid rgba(255,255,255,0.8)",
+    overflow: "hidden"
   },
   header: {
     display: "flex",
@@ -458,7 +480,8 @@ const styles = {
     boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
     display: "flex",
     flexDirection: "column",
-    border: "1px solid #e2e8f0"
+    border: "1px solid #e2e8f0",
+    minHeight: 0,
   },
   panelHeader: {
     display: "flex",
@@ -516,7 +539,8 @@ const styles = {
     borderRadius: "14px",
     padding: "24px",
     boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-    border: "1px solid #e2e8f0"
+    border: "1px solid #e2e8f0",
+    overflow: "hidden",
   },
   planActualHeader: {
     display: "flex",
@@ -586,6 +610,37 @@ const styles = {
   tr: {
     transition: "background 0.2s",
     height: "44px"          // better row height
+  },
+  filterRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "20px",
+    background: "linear-gradient(135deg, #dbeafe, #e0e7ff)",
+    padding: "14px 20px",
+    borderRadius: "12px",
+    border: "1px solid rgba(59,130,246,0.2)",
+    boxShadow: "inset 0 2px 6px rgba(59,130,246,0.1)",
+    marginBottom: "16px",
+    flexWrap: "nowrap"
+  },
+  filterLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexShrink: 0
+  },
+  filterRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexShrink: 0
+  },
+  comparisonBody: {
+    flex: 1,              // 🔥 fills remaining height
+    overflow: "hidden",   // 🔥 prevents overflow
+    display: "flex",
+    flexDirection: "column"
   },
 
 

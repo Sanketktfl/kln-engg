@@ -19,37 +19,40 @@ const MasterDataPopup = ({ show, onClose }) => {
   const [targetValue, setTargetValue] = useState("");
   const [targetId, setTargetId] = useState(null);
 
-  const [createForm, setCreateForm] = useState({
-    die_number: "",
-    plant_code: "",
-    customer_name: "",
-    part_name: "",
-    r_code: "",
-    forge_press: "",
-    rm_grade: "",
-    rm_section: "",
-    rm_rate_kg: "",
-    cut_wt: "",
-    burr_wt: "",
-    flash_slug_wt: "",
-    endpc_wt: "",
-    gross_wt: "",
-    net_wt: "",
-    machining_wt: "",
-    cycle_time: "",
-    forge_price: "",
-    forge_scrap_price: "",
-    currency: "",
-    country: "",
-    kam: "",
-  });
+const [createForm, setCreateForm] = useState({
+  plant_code: "",
+  die_number: "",
+  forge_press: "",
+  cycle_time: "",
+
+  customer_name: "",
+  part_name: "",
+
+  cut_wt: "",
+  burr_wt: "",
+  flash_slug_wt: "",
+  endpc_wt: "",
+  gross_wt: "",
+  net_wt: "",
+  machining_wt: "",
+
+  forge_price: "",
+  forge_scrap_price: "",
+  rm_rate_kg: "",
+
+  r_code: "",
+  rm_grade: "",
+  rm_section: "",
+  cut_length: ""
+});
+
 
   const fetchTarget = async (plant) => {
     if (!plant) return;
 
 
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
+      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const match = data.objects.find(
@@ -98,7 +101,7 @@ const MasterDataPopup = ({ show, onClose }) => {
       } else {
         // CREATE
         await fetch(
-          "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target",
+          "http://localhost:8080/api/v1/collection/kln_yield_target",
           {
             method: "POST",
             ...authOptions,
@@ -125,7 +128,7 @@ const MasterDataPopup = ({ show, onClose }) => {
 
     try {
       const filter = encodeURIComponent(`die_number eq '${masterSearchNo}'`);
-      const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
+      const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -216,7 +219,7 @@ const MasterDataPopup = ({ show, onClose }) => {
     try {
         const authOptions = await getAuthHeadersWithCSRF("POST");
       const resp = await fetch(
-        "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data",
+        "http://localhost:8080/api/v1/collection/kln_master_data",
         {
           method: "POST",
           ...authOptions,
@@ -263,7 +266,7 @@ const MasterDataPopup = ({ show, onClose }) => {
   const getAuthHeadersWithCSRF = async (method = "GET", contentType = true) => {
     const credentials = btoa("caddok:");
     // Step 1: Trigger cookie set
-    await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data", {
+    await fetch("http://localhost:8080/api/v1/collection/kln_master_data", {
       method: "GET",
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -271,15 +274,15 @@ const MasterDataPopup = ({ show, onClose }) => {
       credentials: "include",
     });
 
-    const csrfToken = getCookie("CSRFToken");
-    console.log("Fetched CSRF Token from cookie:", csrfToken);
-    if (!csrfToken) {
-      throw new Error("CSRF token not found in cookies.");
-    }
+    // const csrfToken = getCookie("CSRFToken");
+    // console.log("Fetched CSRF Token from cookie:", csrfToken);
+    // if (!csrfToken) {
+    //   throw new Error("CSRF token not found in cookies.");
+    // }
 
     const headers = {
       Authorization: `Basic ${credentials}`,
-      "X-CSRF-Token": csrfToken,
+      // "X-CSRF-Token": csrfToken,
     };
 
     if (contentType) {
@@ -296,7 +299,7 @@ const MasterDataPopup = ({ show, onClose }) => {
   const credentials = btoa("caddok:");
 
   // 🔹 Trigger CSRF cookie for TARGET collection
-  await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target", {
+  await fetch("http://localhost:8080/api/v1/collection/kln_yield_target", {
     method: "GET",
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -304,12 +307,12 @@ const MasterDataPopup = ({ show, onClose }) => {
     credentials: "include",
   });
 
-  const csrfToken = getCookie("CSRFToken");
-  if (!csrfToken) throw new Error("CSRF token not found");
+  // const csrfToken = getCookie("CSRFToken");
+  // if (!csrfToken) throw new Error("CSRF token not found");
 
   const headers = {
     Authorization: `Basic ${credentials}`,
-    "X-CSRF-Token": csrfToken,
+    // "X-CSRF-Token": csrfToken,
     "Content-Type": "application/json",
     "If-Match": "*",   // 🔴 mandatory for PUT / POST in CONTACT
   };
@@ -321,22 +324,24 @@ const MasterDataPopup = ({ show, onClose }) => {
 };
 
 
-  const numericFields = [
-    "cut_wt",
-    "burr_wt",
-    "flash_slug_wt",
-    "endpc_wt",
-    "gross_wt",
-    "net_wt",
-    "rm_rate_kg",
-    "rm_section",
-    "forge_price",
-    "forge_scrap_price",
-    "cycle_time",
-    "plant_code",
-    "cut_length",
-    "ht_cycle"
-  ];
+const numericFields = [
+  "plant_code",
+  "forge_press",
+  "cycle_time",
+  "cut_wt",
+  "burr_wt",
+  "flash_slug_wt",
+  "endpc_wt",
+  "gross_wt",
+  "net_wt",
+  "machining_wt",
+  "forge_price",
+  "forge_scrap_price",
+  "rm_rate_kg",
+  "rm_section",
+  "cut_length"
+];
+
 
   const editFieldOrder = [
     "die_number",
@@ -427,28 +432,18 @@ const MasterDataPopup = ({ show, onClose }) => {
                     <div style={masterStyles.masterFormGrid}>
                       <div>
                         <label style={masterStyles.masterCreateLabel}>Plant Code</label>
-                        <input
-                          style={{ ...masterStyles.masterInput, background: "#f1f5f9" }}
-                          value={masterResult.plant_code ?? ""}
-                          disabled
-                        />
+                        <input style={masterStyles.masterInput} value={masterResult.plant_code ?? ""} disabled />
                       </div>
                       <div>
                         <label style={masterStyles.masterCreateLabel}>Die Number</label>
-                        <input
-                          style={{ ...masterStyles.masterInput, background: "#f1f5f9" }}
-                          value={masterResult.die_number ?? ""}
-                          disabled
-                        />
+                        <input style={masterStyles.masterInput} value={masterResult.die_number ?? ""} disabled />
                       </div>
                       <div>
                         <label style={masterStyles.masterCreateLabel}>Forging Press (T)</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.forge_press ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, forge_press: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, forge_press: e.target.value })}
                         />
                       </div>
                       <div>
@@ -456,9 +451,7 @@ const MasterDataPopup = ({ show, onClose }) => {
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.cycle_time ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, cycle_time: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, cycle_time: e.target.value })}
                         />
                       </div>
                     </div>
@@ -467,51 +460,15 @@ const MasterDataPopup = ({ show, onClose }) => {
                     <div style={masterStyles.masterFormGrid}>
                       <div>
                         <label style={masterStyles.masterCreateLabel}>Customer Name</label>
-                        <input
-                          style={{ ...masterStyles.masterInput, background: "#f1f5f9" }}
-                          value={masterResult.customer_name ?? ""}
-                          disabled
-                        />
+                        <input style={masterStyles.masterInput} value={masterResult.customer_name ?? ""} disabled />
                       </div>
                       <div>
                         <label style={masterStyles.masterCreateLabel}>Part Name</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.part_name ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, part_name: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, part_name: e.target.value })}
                         />
-                      </div>
-                      <div>
-                        <label style={masterStyles.masterCreateLabel}>Country</label>
-                        <input
-                          style={masterStyles.masterInput}
-                          value={masterResult.country ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, country: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label style={masterStyles.masterCreateLabel}>Currency</label>
-                        <input
-                          style={masterStyles.masterInput}
-                          value={masterResult.currency ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, currency: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                          <label style={masterStyles.masterCreateLabel}>KAM</label>
-                          <input
-                            style={masterStyles.masterInput}
-                            value={masterResult.kam ?? ""}
-                            onChange={(e) =>
-                              setMasterResult({ ...masterResult, kam: e.target.value })
-                            }
-                          />
                       </div>
                     </div>
                     {/* ================= SECTION C - WEIGHT ================= */}
@@ -520,8 +477,8 @@ const MasterDataPopup = ({ show, onClose }) => {
                       {[
                         ["Cut Weight (kg)", "cut_wt"],
                         ["Burr Weight (kg)", "burr_wt"],
-                        ["Flash/Slug Weight (kg)", "flash_slug_wt"],
-                        ["End-piece Weight (kg)", "endpc_wt"],
+                        ["Flash / Slug Weight (kg)", "flash_slug_wt"],
+                        ["End Piece Weight (kg)", "endpc_wt"],
                         ["Gross Weight (kg)", "gross_wt"],
                         ["Net Weight (kg)", "net_wt"],
                         ["Machining Weight", "machining_wt"],
@@ -531,9 +488,7 @@ const MasterDataPopup = ({ show, onClose }) => {
                           <input
                             style={masterStyles.masterInput}
                             value={masterResult[key] ?? ""}
-                            onChange={(e) =>
-                              setMasterResult({ ...masterResult, [key]: e.target.value })
-                            }
+                            onChange={(e) => setMasterResult({ ...masterResult, [key]: e.target.value })}
                           />
                         </div>
                       ))}
@@ -542,57 +497,47 @@ const MasterDataPopup = ({ show, onClose }) => {
                     <h3 style={masterStyles.masterSectionTitle}>Rate</h3>
                     <div style={masterStyles.masterFormGrid}>
                       <div>
-                        <label style={masterStyles.masterCreateLabel}>Forging Price (₹)</label>
+                        <label style={masterStyles.masterCreateLabel}>Forging Rate (₹)</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.forge_price ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, forge_price: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, forge_price: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label style={masterStyles.masterCreateLabel}>Forge Scrap Price (₹)</label>
+                        <label style={masterStyles.masterCreateLabel}>Forge Scrap Rate (₹)</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.forge_scrap_price ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, forge_scrap_price: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, forge_scrap_price: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label style={masterStyles.masterCreateLabel}>RM Rate/kg (₹)</label>
+                        <label style={masterStyles.masterCreateLabel}>RM Rate / Kg (₹)</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.rm_rate_kg ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, rm_rate_kg: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, rm_rate_kg: e.target.value })}
                         />
                       </div>
                     </div>
+                    {/* ================= SECTION E - Raw Material ================= */}
                     <h3 style={masterStyles.masterSectionTitle}>Raw Material</h3>
                     <div style={masterStyles.masterFormGrid}>
-
                       <div>
                         <label style={masterStyles.masterCreateLabel}>R Code</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.r_code ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, r_code: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, r_code: e.target.value })}
                         />
                       </div>
                       <div>
-                        <label style={masterStyles.masterCreateLabel}>Raw Material Grade</label>
+                        <label style={masterStyles.masterCreateLabel}>RM Grade</label>
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.rm_grade ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, rm_grade: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, rm_grade: e.target.value })}
                         />
                       </div>
                       <div>
@@ -600,9 +545,7 @@ const MasterDataPopup = ({ show, onClose }) => {
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.rm_section ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, rm_section: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, rm_section: e.target.value })}
                         />
                       </div>
                       <div>
@@ -610,34 +553,7 @@ const MasterDataPopup = ({ show, onClose }) => {
                         <input
                           style={masterStyles.masterInput}
                           value={masterResult.cut_length ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, cut_length: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-                    <h3 style={masterStyles.masterSectionTitle}>Heat Treatment</h3>
-                    <div style={masterStyles.masterFormGrid}>
-                      <div>
-                        <label style={masterStyles.masterCreateLabel}>Heat Treatment Process</label>
-                        <input
-                          style={masterStyles.masterInput}
-                          value={masterResult.ht_process ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, ht_process: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label style={masterStyles.masterCreateLabel}>
-                          Heat Treatment Cycle Time (sec)
-                        </label>
-                        <input
-                          style={masterStyles.masterInput}
-                          value={masterResult.ht_cycle ?? ""}
-                          onChange={(e) =>
-                            setMasterResult({ ...masterResult, ht_cycle: e.target.value })
-                          }
+                          onChange={(e) => setMasterResult({ ...masterResult, cut_length: e.target.value })}
                         />
                       </div>
                     </div>
@@ -652,8 +568,7 @@ const MasterDataPopup = ({ show, onClose }) => {
               </div>
           ) : masterTab === "create" ? (
             <div style={masterStyles.masterFormCard}>
-              <h4>Create New Master Row</h4>
-              <p style={{ color: "#64748b" }}>Fill all required details</p>
+              <h4>Create New Master Data</h4>
               {/* ================= SECTION A - MASTER DATA ================= */}
               <h3 style={masterStyles.masterSectionTitle}>Master Data</h3>
               <div style={masterStyles.masterFormGrid}>
@@ -662,7 +577,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.plant_code}
-                    onChange={(e) => setCreateForm({ ...createForm, plant_code: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, plant_code: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -670,7 +587,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.die_number}
-                    onChange={(e) => setCreateForm({ ...createForm, die_number: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, die_number: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -678,7 +597,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.forge_press}
-                    onChange={(e) => setCreateForm({ ...createForm, forge_press: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, forge_press: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -686,7 +607,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.cycle_time}
-                    onChange={(e) => setCreateForm({ ...createForm, cycle_time: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, cycle_time: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -698,7 +621,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.customer_name}
-                    onChange={(e) => setCreateForm({ ...createForm, customer_name: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, customer_name: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -706,119 +631,64 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.part_name}
-                    onChange={(e) => setCreateForm({ ...createForm, part_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Country</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.country}
-                    onChange={(e) => setCreateForm({ ...createForm, country: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Currency</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.currency}
-                    onChange={(e) => setCreateForm({ ...createForm, currency: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>KAM</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.kam}
-                    onChange={(e) => setCreateForm({ ...createForm, kam: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, part_name: e.target.value })
+                    }
                   />
                 </div>
               </div>
               {/* ================= SECTION C - WEIGHT ================= */}
               <h3 style={masterStyles.masterSectionTitle}>Weight</h3>
               <div style={masterStyles.masterFormGrid}>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Cut Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.cut_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, cut_wt: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Burr Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.burr_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, burr_wt: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Flash/Slug Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.flash_slug_wt}
-                    onChange={(e) =>
-                      setCreateForm({ ...createForm, flash_slug_wt: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>End-piece Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.endpc_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, endpc_wt: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Gross Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.gross_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, gross_wt: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Net Weight (kg)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.net_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, net_wt: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Machining / Finisher Weight</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.machining_wt}
-                    onChange={(e) => setCreateForm({ ...createForm, machining_wt: e.target.value })}
-                  />
-                </div>
+                {[
+                  ["Cut Weight (kg)", "cut_wt"],
+                  ["Burr Weight (kg)", "burr_wt"],
+                  ["Flash / Slug Weight (kg)", "flash_slug_wt"],
+                  ["End Piece Weight (kg)", "endpc_wt"],
+                  ["Gross Weight (kg)", "gross_wt"],
+                  ["Net Weight (kg)", "net_wt"],
+                  ["Machining Weight", "machining_wt"],
+                ].map(([label, key]) => (
+                  <div key={key}>
+                    <label style={masterStyles.masterCreateLabel}>{label}</label>
+                    <input
+                      style={masterStyles.masterInput}
+                      value={createForm[key]}
+                      onChange={(e) =>
+                        setCreateForm({ ...createForm, [key]: e.target.value })
+                      }
+                    />
+                  </div>
+                ))}
               </div>
               {/* ================= SECTION D - RATE ================= */}
               <h3 style={masterStyles.masterSectionTitle}>Rate</h3>
               <div style={masterStyles.masterFormGrid}>
                 <div>
-                  <label style={masterStyles.masterCreateLabel}>Forging Price (₹)</label>
+                  <label style={masterStyles.masterCreateLabel}>Forging Rate (₹)</label>
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.forge_price}
-                    onChange={(e) => setCreateForm({ ...createForm, forge_price: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Forge Scrap Price (₹)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.forge_scrap_price}
                     onChange={(e) =>
-                      setCreateForm({ ...createForm, forge_scrap_price: e.target.value })
+                      setCreateForm({ ...createForm, forge_price: e.target.value })
                     }
                   />
                 </div>
                 <div>
-                  <label style={masterStyles.masterCreateLabel}>RM Rate/kg (₹)</label>
+                  <label style={masterStyles.masterCreateLabel}>Forge Scrap Rate (₹)</label>
+                  <input
+                    style={masterStyles.masterInput}
+                    value={createForm.forge_scrap_price}
+                    onChange={(e) =>
+                      setCreateForm({
+                        ...createForm,
+                        forge_scrap_price: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={masterStyles.masterCreateLabel}>RM Rate / Kg (₹)</label>
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.rm_rate_kg}
@@ -836,15 +706,19 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.r_code}
-                    onChange={(e) => setCreateForm({ ...createForm, r_code: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, r_code: e.target.value })
+                    }
                   />
                 </div>
                 <div>
-                  <label style={masterStyles.masterCreateLabel}>Raw Material Grade</label>
+                  <label style={masterStyles.masterCreateLabel}>RM Grade</label>
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.rm_grade}
-                    onChange={(e) => setCreateForm({ ...createForm, rm_grade: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, rm_grade: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -852,7 +726,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.rm_section}
-                    onChange={(e) => setCreateForm({ ...createForm, rm_section: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, rm_section: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -860,27 +736,9 @@ const MasterDataPopup = ({ show, onClose }) => {
                   <input
                     style={masterStyles.masterInput}
                     value={createForm.cut_length}
-                    onChange={(e) => setCreateForm({ ...createForm, cut_length: e.target.value })}
-                  />
-                </div>
-              </div>
-              {/* ================= SECTION F - HEAT TREATMENT ================= */}
-              <h3 style={masterStyles.masterSectionTitle}>Heat Treatment</h3>
-              <div style={masterStyles.masterFormGrid}>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Heat Treatment Process</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.ht_process}
-                    onChange={(e) => setCreateForm({ ...createForm, ht_process: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label style={masterStyles.masterCreateLabel}>Heat Treatment Cycle Time (sec)</label>
-                  <input
-                    style={masterStyles.masterInput}
-                    value={createForm.ht_cycle}
-                    onChange={(e) => setCreateForm({ ...createForm, ht_cycle: e.target.value })}
+                    onChange={(e) =>
+                      setCreateForm({ ...createForm, cut_length: e.target.value })
+                    }
                   />
                 </div>
               </div>
