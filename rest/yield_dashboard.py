@@ -41,6 +41,7 @@ def _json(model, request):
 
 
 #For year wise table
+
 class YieldDashboardYearly(JsonAPI):
     pass
 @Internal.mount(app=YieldDashboardYearly, path="yield_dashboard_yearly")
@@ -91,6 +92,7 @@ def _json(model, request):
     if request.params.get("plant_code"):
         filters["plant_code"] = request.params.get("plant_code")
     return model.yearly_yield(filters)
+
 
 # ================= MONTHLY ==================
 
@@ -155,7 +157,7 @@ class YieldDashboardDieData:
 
         sqldata = """
             SELECT plant_code, pre_die_no, total_order_qty, (total_tonnage)/1000 as total_tonnage,
-                   yield_pct, family, year_month
+                   yield_pct, family, year_month, revenue
             FROM prodd_yield_die_agg
             WHERE 1=1
         """
@@ -188,7 +190,6 @@ def _json(model, request):
     if request.params.get('plant_code'):
         filters['plant_code'] = request.params.get('plant_code')
     return model.yearly_yielddie(filters)
-
 
 
 # ================= FAMILY ==================
@@ -245,7 +246,6 @@ def _json(model, request):
     return model.yearly_yieldfam(filters)
 
 
-
 # ================= DIE WEIGHT ==================
 
 class YieldDashboardWt(JsonAPI):
@@ -282,9 +282,8 @@ def _json(model, request):
     return model.yearly_yieldwt(filters)
 
 
-
-
 # ================= Family Quarter Data ==================
+
 class YieldDashboardFamQt(JsonAPI):
     pass
 
@@ -354,9 +353,8 @@ def _json(model, request):
     return model.yearly_yieldfam(filters)
 
 
-
-
 # ================= Die Quarter Data ==================
+
 class YieldDashboardDieQt(JsonAPI):
     pass
 

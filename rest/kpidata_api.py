@@ -2,7 +2,6 @@ from cs.platform.web import JsonAPI
 from cs.platform.web.root import Internal
 from cdb import sqlapi
 
-
 class YieldDashboardKPI(JsonAPI):
     pass
 

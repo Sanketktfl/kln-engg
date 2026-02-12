@@ -343,6 +343,7 @@ useEffect(() => {
           percent_yield: Number(round2(item.yield_pct)),
           tonnage: Number(round2(item.total_tonnage)),
           orders: item.total_order_qty ?? 0,
+          revenue: Number(item.revenue ?? 0) / 1000000,
 
           // 🔥 IMPORTANT: split code & label
           plant_code: item.plant_code,     // number (for filtering)
@@ -434,6 +435,7 @@ useEffect(() => {
         percent_yield: item.yield_pct ?? 0,
         tonnage: item.total_tonnage ?? 0,
         orders: item.total_order_qty ?? 0,
+        revenue: Number(item.revenue ?? 0) / 1000000,
         month: selectedMonth,
         plant_code: item.plant_code
       }));
@@ -630,7 +632,7 @@ if (showMonthlyPopup && selectedYear && selectedMonth) {
 
     familyTotals[fam].count++;
     familyTotals[fam].totalProduction += item.tonnage || 0;
-    familyTotals[fam].totalRevenue += item.revenue || 0;
+    familyTotals[fam].totalRevenue += (item.revenue || 0);
     familyTotals[fam].totalOrders += item.orders || item.order_qty || 0;
     familyTotals[fam].percentYieldSum += item.percent_yield || 0;
     familyTotals[fam].percentYieldCount++;
@@ -1202,7 +1204,7 @@ if (isLoading) {
                               </span>
                             </td>
                             <td style={styles.td}>{round2(item.tonnage)}T</td>
-                            <td style={styles.td}>₹{((item.revenue)||0).toFixed(0)}M</td>
+                            <td style={styles.td}>₹{round2(item.revenue)}M</td>
                             <td style={styles.td}>{item.orders.toLocaleString()}</td>
                             <td style={styles.td}>
                               {item.percent_yield >= 80 ? (
@@ -1626,7 +1628,20 @@ if (isLoading) {
                                 <Cell key={`cell-${idx}`} fill={entry.color || COLORS[entry.family] || "#8884d8"} />
                               ))}
                             </Pie>
-                            <Tooltip formatter={(value) => [`₹${(value / 1000).toFixed(0)}M`, "Revenue"]} />
+                            <Tooltip
+                              formatter={(value, name, props) => [
+                                <div>
+                                  <div style={{ fontWeight: "600", marginBottom: "2px" }}>
+                                    {props.payload.family}
+                                  </div>
+                                  <div>
+                                    Revenue : ₹{round2(value)}M
+                                  </div>
+                                </div>,
+                                null
+                              ]}
+                              labelFormatter={() => null}
+                            />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -1652,7 +1667,7 @@ if (isLoading) {
                               <td style={styles.summaryTableThTd}>{family.family}</td>
                               <td style={styles.summaryTableThTd}>{family.count}</td>
                               <td style={styles.summaryTableThTd}>{family.avgYield.toFixed(2)}%</td>
-                              <td style={styles.summaryTableThTd}>₹{(family.totalRevenue / 1000).toFixed(0)}M</td>
+                              <td style={styles.summaryTableThTd}>₹{round2(family.totalRevenue)}M</td>
                               <td style={styles.summaryTableThTd}>{family.totalProduction.toFixed(1)}T</td>
                               <td style={styles.summaryTableThTd}>{family.totalOrders}</td>
                             </tr>
@@ -1717,6 +1732,7 @@ if (isLoading) {
                             <th style={styles.summaryTableThTd}>Yield %</th>
                             <th style={styles.summaryTableThTd}>Production (T)</th>
                             <th style={styles.summaryTableThTd}>Orders</th>
+                            <th style={styles.summaryTableThTd}>Revenue</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1728,6 +1744,7 @@ if (isLoading) {
                                 <td style={styles.summaryTableThTd}>{round2(item.percent_yield)}%</td>
                                 <td style={styles.summaryTableThTd}>{round2(item.tonnage)} T</td>
                                 <td style={styles.summaryTableThTd}>{item.orders || 0}</td>
+                                <td style={styles.summaryTableThTd}>₹{round2(item.revenue)}M</td>
                               </tr>
                             ))}
                         </tbody>
