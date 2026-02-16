@@ -18,6 +18,12 @@ const MasterDataPopup = ({ show, onClose }) => {
   const [targetPlant, setTargetPlant] = useState("");
   const [targetValue, setTargetValue] = useState("");
   const [targetId, setTargetId] = useState(null);
+  const [masterList, setMasterList] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+
 
 const [createForm, setCreateForm] = useState({
   plant_code: "",
@@ -45,6 +51,108 @@ const [createForm, setCreateForm] = useState({
   rm_section: "",
   cut_length: ""
 });
+
+
+const fetchMasterList = async (pageNo = 1) => {
+  setListLoading(true);
+
+  try {
+    const skip = (pageNo - 1) * pageSize;
+
+    const url =
+      `http://localhost:8080/api/v1/collection/kln_master_data` +
+      `?$skip=${skip}&$top=${pageSize}`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    const cleaned = data.objects.map(obj =>
+      Object.fromEntries(
+        Object.entries(obj).filter(
+          ([key]) =>
+            !key.startsWith("@") &&
+            !key.startsWith("system:")
+        )
+      )
+    );
+
+    setMasterList(cleaned);
+
+    // CONTACT returns total_count
+    setTotalRecords(data.total_count || cleaned.length);
+
+  } catch (err) {
+    console.error("List fetch error", err);
+  } finally {
+    setListLoading(false);
+  }
+};
+
+useEffect(() => {
+  if (masterTab !== "edit") return;
+
+  if (masterSearchNo.trim() === "") {
+    fetchMasterList(page);   // show full list
+  } else {
+    searchMasterList(masterSearchNo);   // show filtered list
+  }
+
+}, [masterSearchNo, masterTab, page]);
+
+
+const searchMasterList = async (dieNo) => {
+
+  setListLoading(true);
+
+  try {
+
+    const filter =
+      encodeURIComponent(`startswith(die_number,'${dieNo}')`);
+
+    const url =
+      `http://localhost:8080/api/v1/collection/kln_master_data` +
+      `?$filter=${filter}&$top=${pageSize}`;
+
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    const cleaned = data.objects.map(obj =>
+      Object.fromEntries(
+        Object.entries(obj).filter(
+          ([key]) =>
+            !key.startsWith("@") &&
+            !key.startsWith("system:")
+        )
+      )
+    );
+
+    setMasterList(cleaned);
+
+    setTotalRecords(data.total_count || cleaned.length);
+
+  } catch (err) {
+
+    console.error("Search error:", err);
+
+  } finally {
+
+    setListLoading(false);
+
+  }
+};
+
+
+const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
+const cancelEdit = () => {
+  setMasterResult(null);
+  setMasterRaw(null);
+  setMasterSearchNo("");
+  setMasterError("");
+
+  // reload list again
+  fetchMasterList(page);
+};
+
 
 
   const fetchTarget = async (plant) => {
@@ -117,8 +225,9 @@ const [createForm, setCreateForm] = useState({
   };
 
 
-  const fetchMasterRecord = async () => {
-    if (!masterSearchNo.trim()) {
+  const fetchMasterRecord = async (dieNoParam = null) => {
+      const dieNo = dieNoParam || masterSearchNo;
+      if (!dieNo.trim()) {
       setMasterError("Enter a die number");
       return;
     }
@@ -127,7 +236,7 @@ const [createForm, setCreateForm] = useState({
     setMasterError("");
 
     try {
-      const filter = encodeURIComponent(`die_number eq '${masterSearchNo}'`);
+      const filter = encodeURIComponent(`die_number eq '${dieNo}'`);
       const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
 
       const resp = await fetch(url);
@@ -418,12 +527,95 @@ const numericFields = [
                   value={masterSearchNo}
                   onChange={(e) => setMasterSearchNo(e.target.value)}
                 />
-                <button style={masterStyles.masterSaveBtn} onClick={fetchMasterRecord}>
-                  Search
-                </button>
+
               </div>
               {masterError && <p style={{ color: "red" }}>{masterError}</p>}
               {masterLoading && <p>Loading...</p>}
+              {/* SHOW LIST WHEN NO SEARCH */}
+                {!masterResult && (
+                  <div style={{ marginTop: "15px" }}>
+
+                    <h4>All Die Master Data</h4>
+
+                    {listLoading ? (
+                      <p>Loading...</p>
+                    ) : (
+                      <>
+                        <table style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          marginTop: "10px"
+                        }}>
+                          <thead>
+                            <tr style={{ background: "#f1f5f9" }}>
+                              <th style={thStyle}>Plant</th>
+                              <th style={thStyle}>Die Number</th>
+                              <th style={thStyle}>Part Name</th>
+                              <th style={thStyle}>Forge Press</th>
+                              <th style={thStyle}>Cycle Time</th>
+                              <th style={thStyle}>Customer</th>
+                            </tr>
+                          </thead>
+
+                          <tbody>
+                          {masterList.map((row, i) => (
+                            <tr
+                              key={i}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => {
+                                setMasterSearchNo(row.die_number);
+                                fetchMasterRecord(row.die_number);
+                              }}
+                            >
+                              <td style={tdStyle}>{row.plant_code}</td>
+                              <td style={tdStyle}>{row.die_number}</td>
+                              <td style={tdStyle}>{row.part_name}</td>
+                              <td style={tdStyle}>{row.forge_press}</td>
+                              <td style={tdStyle}>{row.cycle_time}</td>
+                              <td style={tdStyle}>{row.customer_name}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        </table>
+
+                        {/* PAGINATION */}
+                        <div style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginTop: "10px"
+                        }}>
+                          <button
+                              disabled={page <= 1}
+                              onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                              style={{
+                                ...masterStyles.masterSaveBtn,
+                                opacity: page <= 1 ? 0.5 : 1,
+                                cursor: page <= 1 ? "not-allowed" : "pointer"
+                              }}
+                            >
+                              Previous
+                            </button>
+                          <span>
+                            Page {page} of {totalPages}
+                          </span>
+                          <button
+                              disabled={page >= totalPages}
+                              onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                              style={{
+                                ...masterStyles.masterSaveBtn,
+                                opacity: page >= totalPages ? 0.5 : 1,
+                                cursor: page >= totalPages ? "not-allowed" : "pointer"
+                              }}
+                            >
+                              Next
+                            </button>
+                        </div>
+
+                      </>
+                    )}
+                  </div>
+                )}
+
               {masterResult && (
                 <div style={masterStyles.masterFormCard}>
                   <h4>Editing: Die {masterResult.die_number}</h4>
@@ -557,12 +749,29 @@ const numericFields = [
                         />
                       </div>
                     </div>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
                   <button
-                    style={{ ...masterStyles.masterSaveBtn, marginTop: "10px" }}
+                    style={masterStyles.masterSaveBtn}
                     onClick={updateMasterRecord}
                   >
                     Save Changes
                   </button>
+                  <button
+                    style={{
+                      background: "#64748b",
+                      color: "white",
+                      padding: "10px 16px",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontWeight: "600",
+                      cursor: "pointer",
+                      fontSize: "14px"
+                    }}
+                    onClick={cancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </div>
                 </div>
               )}
               </div>
@@ -911,4 +1120,15 @@ const masterStyles = {
     fontWeight: "600",
   },
 
+};
+
+const thStyle = {
+  border: "1px solid #e2e8f0",
+  padding: "8px",
+  textAlign: "left"
+};
+
+const tdStyle = {
+  border: "1px solid #e2e8f0",
+  padding: "8px"
 };

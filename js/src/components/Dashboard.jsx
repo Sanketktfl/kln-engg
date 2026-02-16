@@ -5,6 +5,7 @@ import DieWeightBar from "./DieWeightBar";
 import MasterDataPopup from "./MasterDataPopup";
 import ComparisonPopup from "./ComparisonPopup";
 import Base64Image from "./Base64Logo";
+import AllPlantsMonthlyPopup from "./AllPlantsMonthlyPopup";
 
 import {
   Line,
@@ -51,6 +52,7 @@ const Dashboard = () => {
   const [showMasterPopup, setShowMasterPopup] = useState(false);
   const [plantTargets, setPlantTargets] = useState({});
   const [showComparisonPopup, setShowComparisonPopup] = useState(false);
+  const [showAllPlantsPopup, setShowAllPlantsPopup] = useState(false);
 
 
 
@@ -393,6 +395,7 @@ useEffect(() => {
         year: String(row.year),
         avgYield: Number(round2(row.yield_pct)),
         tonnage: Number(round2(row.total_tonnage)),
+        revenue: Number((row.revenue ?? row[""] ?? 0) / 1000000)
       }));
 
       setYearlyChartData(formatted);
@@ -546,6 +549,7 @@ useEffect(() => {
         avgYield: row.yield_pct ?? 0,
         tonnage: row.total_tonnage ?? 0,
         totalDies: row.totaldies ?? 0,
+        revenue: Number(row.revenue ?? 0) / 1000000
       }));
 
       setYearWiseData(
@@ -588,7 +592,7 @@ const dataToUse = activePlant
     avgYield: dataToUse.length ? (totalYield / dataToUse.length).toFixed(2) : 0,
     totalDies: totalDies || 0,
     totalProduction: totalProduction.toFixed(2),
-    totalRevenue: (totalRevenue / 1000000).toFixed(2),
+    totalRevenue: totalRevenue.toFixed(2),
   });
 }, [activePlant, yearWiseData]);
 
@@ -945,32 +949,44 @@ if (isLoading) {
         </div>
       </div>
 
-      <div style={styles.tabs}>
-        <button
-          onClick={() => setActiveTab("overview")}
-          style={{ ...styles.tab, ...(activeTab === "overview" ? styles.activeTab : {}) }}
-        >
-          Overview
-        </button>
-        <button
-          onClick={() => setActiveTab("family")}
-          style={{ ...styles.tab, ...(activeTab === "family" ? styles.activeTab : {}) }}
-        >
-          Family-wise
-        </button>
-        <button
-          onClick={() => setActiveTab("die")}
-          style={{ ...styles.tab, ...(activeTab === "die" ? styles.activeTab : {}) }}
-        >
-          Die-wise
-        </button>
-        <button
-            onClick={() => setActiveTab("die_weight")}
-            style={{ ...styles.tab, ...(activeTab === "die_weight" ? styles.activeTab : {}) }}
+      <div style={styles.tabsContainer}>
+          <div style={styles.tabsLeft}>
+            <button
+              onClick={() => setActiveTab("overview")}
+              style={{ ...styles.tab, ...(activeTab === "overview" ? styles.activeTab : {}) }}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab("family")}
+              style={{ ...styles.tab, ...(activeTab === "family" ? styles.activeTab : {}) }}
+            >
+              Family-wise
+            </button>
+            <button
+              onClick={() => setActiveTab("die")}
+              style={{ ...styles.tab, ...(activeTab === "die" ? styles.activeTab : {}) }}
+            >
+              Die-wise
+            </button>
+            <button
+              onClick={() => setActiveTab("die_weight")}
+              style={{ ...styles.tab, ...(activeTab === "die_weight" ? styles.activeTab : {}) }}
+            >
+              Die Weight Details
+            </button>
+          </div>
+
+          {/* RIGHT MOST BUTTON */}
+          <button
+            style={styles.allPlantsBtn}
+            onClick={() => setShowAllPlantsPopup(true)}
           >
-            Die Weight Details
+            All Plants Monthly
           </button>
-      </div>
+
+        </div>
+
 
       <div style={styles.contentArea}>
         {activeTab === "overview" && (
@@ -1846,6 +1862,12 @@ if (isLoading) {
           show={showComparisonPopup}
           onClose={() => setShowComparisonPopup(false)}
         />
+        <AllPlantsMonthlyPopup
+          show={showAllPlantsPopup}
+          onClose={() => setShowAllPlantsPopup(false)}
+          year={currentFY}
+        />
+
       </div>
     </div>
   );
@@ -2419,6 +2441,29 @@ familyFilterSelect: {
     gap: "8px",
     alignItems: "center",
   },
+  tabsContainer: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: "4px"
+    },
+
+    tabsLeft: {
+      display: "flex",
+      gap: "6px"
+    },
+
+    allPlantsBtn: {
+      background: "#0ea5e9",
+      color: "white",
+      border: "none",
+      padding: "6px 14px",
+      borderRadius: "8px",
+      cursor: "pointer",
+      fontWeight: "600",
+      fontSize: "13px",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+    }
 
 
 };

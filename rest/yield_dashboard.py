@@ -19,7 +19,7 @@ class YieldDashboardData:
                 SUM(totalDies) as totaldies,
                 (SUM(total_tonnage))/1000 as total_tonnage,
                 (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
-                plant_code
+                plant_code, SUM(revenue) as revenue
                 FROM prodd_yield_year_agg
                 WHERE CAST(LEFT(financial_year, 4) AS INT) =
                   CASE 
@@ -66,7 +66,7 @@ class YieldDashboardYearlyData:
         sqldata = f"""SELECT SUM(total_order_qty) as total_order_qty,
                 SUM(totalDies) as totaldies,
                 (SUM(total_tonnage))/1000 as total_tonnage,
-                (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct,
+                (SUM(yield_pct)/COUNT(yield_pct)) as yield_pct, SUM(revenue),
                 financial_year as year
                 FROM prodd_yield_year_agg
                 WHERE CAST(LEFT(financial_year,4) AS INT) BETWEEN {start_fy} AND {end_fy}
