@@ -45,7 +45,7 @@ const AllPlantsMonthlyPopup = ({ show, onClose }) => {
         const promises = PLANTS.map(async (plant) => {
           try {
             const url =
-              "http://localhost:8080/internal/yield_dashboard_monthly"
+              "https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly"
               + "?year=" + selectedYear
               + "&plant_code=" + plant.code;
             const resp = await fetch(url);

@@ -24,7 +24,7 @@ const ComparisonPopup = ({ show, onClose }) => {
 
 
   const fetchDieData = async (dieNo, setData) => {
-    let url = `http://localhost:8080/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_die?die_no=${dieNo}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -32,7 +32,7 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchFamilyData = async (family, setData) => {
-    let url = `http://localhost:8080/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_family?family=${family}&period_type=${periodType}&year=${year}`;
     if (periodType === "month") url += `&month=${month}`;
     if (periodType === "quarter") url += `&quarter=${quarter}`;
     const resp = await fetch(url);
@@ -40,7 +40,7 @@ const ComparisonPopup = ({ show, onClose }) => {
   };
 
   const fetchTargetData = async () => {
-    let url = `http://localhost:8080/internal/yield_comp_target?period_type=${periodType}`;
+    let url = `https://ktflceprd.kalyanicorp.com/internal/yield_comp_target?period_type=${periodType}`;
     const resp = await fetch(url);
     const data = await resp.json();
     setTargetData(Array.isArray(data) ? data : []);

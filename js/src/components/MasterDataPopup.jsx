@@ -60,7 +60,7 @@ const fetchMasterList = async (pageNo = 1) => {
     const skip = (pageNo - 1) * pageSize;
 
     const url =
-      `http://localhost:8080/api/v1/collection/kln_master_data` +
+      `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data` +
       `?$skip=${skip}&$top=${pageSize}`;
 
     const resp = await fetch(url);
@@ -110,7 +110,7 @@ const searchMasterList = async (dieNo) => {
       encodeURIComponent(`startswith(die_number,'${dieNo}')`);
 
     const url =
-      `http://localhost:8080/api/v1/collection/kln_master_data` +
+      `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data` +
       `?$filter=${filter}&$top=${pageSize}`;
 
     const resp = await fetch(url);
@@ -160,7 +160,7 @@ const cancelEdit = () => {
 
 
     try {
-      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const match = data.objects.find(
@@ -209,7 +209,7 @@ const cancelEdit = () => {
       } else {
         // CREATE
         await fetch(
-          "http://localhost:8080/api/v1/collection/kln_yield_target",
+          "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target",
           {
             method: "POST",
             ...authOptions,
@@ -237,7 +237,7 @@ const cancelEdit = () => {
 
     try {
       const filter = encodeURIComponent(`die_number eq '${dieNo}'`);
-      const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
+      const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -328,7 +328,7 @@ const cancelEdit = () => {
     try {
         const authOptions = await getAuthHeadersWithCSRF("POST");
       const resp = await fetch(
-        "http://localhost:8080/api/v1/collection/kln_master_data",
+        "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data",
         {
           method: "POST",
           ...authOptions,
@@ -375,7 +375,7 @@ const cancelEdit = () => {
   const getAuthHeadersWithCSRF = async (method = "GET", contentType = true) => {
     const credentials = btoa("caddok:");
     // Step 1: Trigger cookie set
-    await fetch("http://localhost:8080/api/v1/collection/kln_master_data", {
+    await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data", {
       method: "GET",
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -408,7 +408,7 @@ const cancelEdit = () => {
   const credentials = btoa("caddok:");
 
   // 🔹 Trigger CSRF cookie for TARGET collection
-  await fetch("http://localhost:8080/api/v1/collection/kln_yield_target", {
+  await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target", {
     method: "GET",
     headers: {
       Authorization: `Basic ${credentials}`,

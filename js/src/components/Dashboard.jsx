@@ -6,6 +6,8 @@ import MasterDataPopup from "./MasterDataPopup";
 import ComparisonPopup from "./ComparisonPopup";
 import Base64Image from "./Base64Logo";
 import AllPlantsMonthlyPopup from "./AllPlantsMonthlyPopup";
+import DieAnalysisPopup from "./DieAnalysisPopup";
+
 
 import {
   Line,
@@ -53,6 +55,7 @@ const Dashboard = () => {
   const [plantTargets, setPlantTargets] = useState({});
   const [showComparisonPopup, setShowComparisonPopup] = useState(false);
   const [showAllPlantsPopup, setShowAllPlantsPopup] = useState(false);
+  const [showAnalysisPopup, setShowAnalysisPopup] = useState(false);
 
 
 
@@ -214,7 +217,7 @@ const HalfDonut = ({ value, label, target }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/server/__quit__", {
+      await fetch("https://ktflceprd.kalyanicorp.com/server/__quit__", {
         method: "GET",
         credentials: "include"
       });
@@ -244,9 +247,9 @@ useEffect(() => {
 
       let url = "";
       if (familyPeriodType === "month") {
-        url = `http://localhost:8080/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
       } else {
-        url = `http://localhost:8080/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
       }
 
 
@@ -301,7 +304,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchTargets = async () => {
     try {
-      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const map = {};
@@ -331,9 +334,9 @@ useEffect(() => {
 
       let url = "";
       if (diePeriodType === "month") {
-        url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
       } else {
-        url = `http://localhost:8080/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
+        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
       }
 
       const resp = await fetch(url);
@@ -386,7 +389,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ? activePlant : "";
       const resp = await fetch(
-        `http://localhost:8080/internal/yield_dashboard_yearly?plant_code=${plantCode}`
+        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_yearly?plant_code=${plantCode}`
       );
 
       const data = await resp.json();
@@ -421,7 +424,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";
 
       const fy = getFinancialYear(selectedYear, formattedMonth);
-      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -472,7 +475,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";   // numeric or empty
 
       const fy = getFinancialYear(selectedYear, selectedMonth || "04");
-      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
+      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -507,7 +510,7 @@ const fetchDieWeightDetails = async () => {
 
   try {
     const resp = await fetch(
-      `http://localhost:8080/internal/yield_dashboard_wt?die_number=${weightDieNo}`
+      `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_wt?die_number=${weightDieNo}`
     );
 
     if (!resp.ok) throw new Error("API failed");
@@ -538,7 +541,7 @@ const fetchDieWeightDetails = async () => {
 useEffect(() => {
   const fetchYearWiseData = async () => {
     try {
-      const resp = await fetch("http://localhost:8080/internal/yield_dashboard");
+      const resp = await fetch("https://ktflceprd.kalyanicorp.com/internal/yield_dashboard");
       const result = await resp.json();
 
       // Fix null year to 2024
@@ -977,16 +980,23 @@ if (isLoading) {
             </button>
           </div>
 
-          {/* RIGHT MOST BUTTON */}
-          <button
-            style={styles.allPlantsBtn}
-            onClick={() => setShowAllPlantsPopup(true)}
-          >
-            All Plants Monthly
-          </button>
+          {/* RIGHT SIDE BUTTON GROUP */}
+            <div style={styles.tabsRight}>
+              <button
+                style={styles.allPlantsBtn}
+                onClick={() => setShowAnalysisPopup(true)}
+              >
+                Die Analysis
+              </button>
 
-        </div>
-
+              <button
+                style={styles.allPlantsBtn}
+                onClick={() => setShowAllPlantsPopup(true)}
+              >
+                All Plants Monthly
+              </button>
+            </div>
+      </div>
 
       <div style={styles.contentArea}>
         {activeTab === "overview" && (
@@ -1867,6 +1877,11 @@ if (isLoading) {
           onClose={() => setShowAllPlantsPopup(false)}
           year={currentFY}
         />
+        <DieAnalysisPopup
+          show={showAnalysisPopup}
+          onClose={() => setShowAnalysisPopup(false)}
+          dieData={filteredDieApiData}
+        />
 
       </div>
     </div>
@@ -2463,7 +2478,13 @@ familyFilterSelect: {
       fontWeight: "600",
       fontSize: "13px",
       boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
-    }
+    },
+
+    tabsRight: {
+      display: "flex",
+      gap: "8px",
+      alignItems: "center"
+    },
 
 
 };
