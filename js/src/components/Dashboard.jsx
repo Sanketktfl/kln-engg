@@ -217,7 +217,7 @@ const HalfDonut = ({ value, label, target }) => {
 
   const handleLogout = async () => {
     try {
-      await fetch("https://ktflceprd.kalyanicorp.com/server/__quit__", {
+      await fetch("http://localhost:8080/server/__quit__", {
         method: "GET",
         credentials: "include"
       });
@@ -247,9 +247,9 @@ useEffect(() => {
 
       let url = "";
       if (familyPeriodType === "month") {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_fam?year=${fy}&month=${familyMonth}&plant_code=${plantCode}`;
       } else {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_famq?year=${fy}&quarter=${familyQuarter}&plant_code=${plantCode}`;
       }
 
 
@@ -304,7 +304,7 @@ useEffect(() => {
 useEffect(() => {
   const fetchTargets = async () => {
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
+      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const map = {};
@@ -334,9 +334,9 @@ useEffect(() => {
 
       let url = "";
       if (diePeriodType === "month") {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${dieMonth}&plant_code=${plantCode}`;
       } else {
-        url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
+        url = `http://localhost:8080/internal/yield_dashboard_dieq?year=${fy}&quarter=${dieQuarter}&plant_code=${plantCode}`;
       }
 
       const resp = await fetch(url);
@@ -389,7 +389,7 @@ useEffect(() => {
     try {
       const plantCode = activePlant ? activePlant : "";
       const resp = await fetch(
-        `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_yearly?plant_code=${plantCode}`
+        `http://localhost:8080/internal/yield_dashboard_yearly?plant_code=${plantCode}`
       );
 
       const data = await resp.json();
@@ -424,7 +424,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";
 
       const fy = getFinancialYear(selectedYear, formattedMonth);
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_die?year=${fy}&month=${formattedMonth}&plant_code=${plantCode}`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -475,7 +475,7 @@ useEffect(() => {
       const plantCode = activePlant ?? "";   // numeric or empty
 
       const fy = getFinancialYear(selectedYear, selectedMonth || "04");
-      const url = `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
+      const url = `http://localhost:8080/internal/yield_dashboard_monthly?year=${fy}&plant_code=${plantCode}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -510,7 +510,7 @@ const fetchDieWeightDetails = async () => {
 
   try {
     const resp = await fetch(
-      `https://ktflceprd.kalyanicorp.com/internal/yield_dashboard_wt?die_number=${weightDieNo}`
+      `http://localhost:8080/internal/yield_dashboard_wt?die_number=${weightDieNo}`
     );
 
     if (!resp.ok) throw new Error("API failed");
@@ -541,7 +541,7 @@ const fetchDieWeightDetails = async () => {
 useEffect(() => {
   const fetchYearWiseData = async () => {
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/internal/yield_dashboard");
+      const resp = await fetch("http://localhost:8080/internal/yield_dashboard");
       const result = await resp.json();
 
       // Fix null year to 2024
@@ -1639,34 +1639,80 @@ if (isLoading) {
                         <h4 style={{ marginBottom: "10px", fontSize: "14px", color: "#64748b" }}>
                           Revenue Distribution by Family
                         </h4>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <PieChart>
+                        <ResponsiveContainer width="100%" height={380}>
+                          <PieChart margin={{ top: 10, right: 40, bottom: 30, left: 40 }}>
                             <Pie
                               data={familyWiseDataForMonth}
                               cx="50%"
-                              cy="50%"
-                              outerRadius={110}
-                              labelLine={false}
-                              label={({ family, percent }) => `${family} (${(percent * 100).toFixed(0)}%)`}
+                              cy="48%"
+                              outerRadius={136}
                               dataKey="totalRevenue"
+
+                              label={(props) => {
+                                const { cx, cy, midAngle, outerRadius, percent, payload } = props;
+
+                                if (percent < 0.02) return null;
+
+                                const RADIAN = Math.PI / 180;
+                                const radius = outerRadius + 22;
+
+                                const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+                                return (
+                                  <text
+                                    x={x}
+                                    y={y}
+                                    fill="#374151"
+                                    textAnchor={x > cx ? "start" : "end"}
+                                    dominantBaseline="central"
+                                    style={{
+                                      fontSize: "14px",
+                                      fontWeight: "500"
+                                    }}
+                                  >
+                                    {payload.family} ({(percent * 100).toFixed(0)}%)
+                                  </text>
+                                );
+                              }}
+
+                              labelLine={(props) => {
+                                const { percent, cx, cy, midAngle, outerRadius } = props;
+                                if (percent < 0.02) return null;
+
+                                const RADIAN = Math.PI / 180;
+
+                                const sx = cx + outerRadius * Math.cos(-midAngle * RADIAN);
+                                const sy = cy + outerRadius * Math.sin(-midAngle * RADIAN);
+
+                                const mx = cx + (outerRadius + 14) * Math.cos(-midAngle * RADIAN);
+                                const my = cy + (outerRadius + 14) * Math.sin(-midAngle * RADIAN);
+
+                                const ex = cx + (outerRadius + 22) * Math.cos(-midAngle * RADIAN);
+                                const ey = cy + (outerRadius + 22) * Math.sin(-midAngle * RADIAN);
+
+                                return (
+                                  <polyline
+                                    points={`${sx},${sy} ${mx},${my} ${ex},${ey}`}
+                                    stroke="#64748b"
+                                    strokeWidth={1.5}
+                                    fill="none"
+                                  />
+                                );
+                              }}
                             >
                               {familyWiseDataForMonth.map((entry, idx) => (
-                                <Cell key={`cell-${idx}`} fill={entry.color || COLORS[entry.family] || "#8884d8"} />
+                                <Cell
+                                  key={`cell-${idx}`}
+                                  fill={entry.color || COLORS[entry.family] || "#8884d8"}
+                                />
                               ))}
                             </Pie>
                             <Tooltip
                               formatter={(value, name, props) => [
-                                <div>
-                                  <div style={{ fontWeight: "600", marginBottom: "2px" }}>
-                                    {props.payload.family}
-                                  </div>
-                                  <div>
-                                    Revenue : ₹{round2(value)}M
-                                  </div>
-                                </div>,
-                                null
+                                `₹ ${round2(value)} M`,
+                                props.payload.family
                               ]}
-                              labelFormatter={() => null}
                             />
                           </PieChart>
                         </ResponsiveContainer>
@@ -1893,27 +1939,27 @@ export default Dashboard;
 /* ======================= STYLES ======================= */
 const styles = {
   layout: {
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-    background: "linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%)", // light indigo
-    padding: "5px",
-  },
+  minHeight: "100vh",
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+  background: "linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 40%, #f0fdf4 100%)",
+  padding: "6px",
+},
 header: {
   top: 0,
   zIndex: 1000,
-  height: "46px",
+  height: "54px",
   width: "100%",
-  background: "linear-gradient(90deg, #38bdf8, #0ea5e9)",
+  background: "linear-gradient(90deg, #0c4a6e 0%, #0369a1 45%, #0284c7 100%)",
   padding: "0px 16px",
-  borderRadius: "10px",
-  marginBottom: "5px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+  borderRadius: "14px",
+  marginBottom: "8px",
+  boxShadow: "0 4px 20px rgba(3, 105, 161, 0.45), inset 0 1px 0 rgba(255,255,255,0.15)",
   display: "flex",
-  alignItems: "center",   // vertical centering
+  alignItems: "center",
   position: "relative",
-  overflow: "hidden"    // prevents content from stretching it
+  overflow: "hidden",
 },
 headerLeft: {
   display: "flex",
@@ -1937,15 +1983,15 @@ headerText: {
   color: "white",
 },
 
-  plantOverviewFixed: {
-    background: "white",
-    borderRadius: "10px",
-    padding: "3px",
-    marginBottom: "6px",
-    position: "relative",
-    border: "1px solid #e5e7eb",     // soft grey border
-    boxShadow: "0 1px 3px rgba(0,0,0,0.05)", // VERY soft shadow
-  },
+plantOverviewFixed: {
+  background: "linear-gradient(135deg, #ffffff, #f8faff)",
+  borderRadius: "14px",
+  padding: "6px 8px",
+  marginBottom: "8px",
+  position: "relative",
+  border: "1px solid #dde6f5",
+  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+},
 
   clearButton: {
     background: "#ff4d4d",
@@ -1969,57 +2015,58 @@ cardGrid: {
 },
 
 plantCard: {
-  background: "linear-gradient(135deg, #fafaff, #eef2ff)",  // ultra-soft light indigo
-  borderRadius: "12px",
-  padding: "5px",
+  background: "#ffffff",
+  borderRadius: "14px",
+  padding: "6px",
   width: "150px",
-  height: "120px",
+  height: "122px",
   display: "flex",
   flexDirection: "column",
   justifyContent: "center",
   alignItems: "center",
   fontSize: "13px",
   fontWeight: "500",
-  border: "1px solid #e0e7ff",      // soft indigo border
-  boxShadow: "0 2px 5px rgba(0, 0, 0, 0.05)", // very soft neutral shadow
-  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  border: "1.5px solid #e8eef6",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.04)",
+  transition: "all 0.2s ease",
   cursor: "pointer",
 },
 
 plantCardActive: {
-  background: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
-  border: "2px solid #38bdf8",
-  boxShadow: "0 3px 8px rgba(56, 189, 248, 0.35)",
+  background: "linear-gradient(145deg, #eff8ff, #dbeafe)",
+  border: "2px solid #3b82f6",
+  boxShadow: "0 0 0 3px rgba(59,130,246,0.12), 0 4px 16px rgba(59,130,246,0.2)",
+  transform: "translateY(-3px)",
 },
-
   tabs: { display: "flex", gap: "6px", marginTop: "4px" },
 
-  tab: {
-    padding: "8px 14px",
-    borderRadius: "8px",
-    border: "1px solid #d1d5db",    // visible soft border
-    background: "#ffffff",          // pure white for clarity
-    color: "#374151",               // darker text for contrast
-    cursor: "pointer",
-    fontWeight: "500",
-    transition: "all 0.2s ease",
-  },
- activeTab: {
-  background: "#e0f2fe",
-  color: "#075985",
-  border: "1px solid #38bdf8",
-  fontWeight: "600",
+tab: {
+  padding: "7px 16px",
+  borderRadius: "8px",
+  border: "none",
+  background: "transparent",
+  color: "#64748b",
+  cursor: "pointer",
+  fontWeight: "500",
+  fontSize: "13px",
+  transition: "all 0.18s ease",
 },
-  contentArea: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    background: "white",
-    borderRadius: "12px",
-    padding: "16px",
-    border: "1px solid #e5e7eb",        // soft border
-    boxShadow: "0 1px 3px rgba(0,0,0,0.04)", // light shadow for depth
-  },
+activeTab: {
+  background: "#ffffff",
+  color: "#1d4ed8",
+  fontWeight: "700",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
+},
+contentArea: {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+  background: "#ffffff",
+  borderRadius: "14px",
+  padding: "18px 20px",
+  border: "1px solid #e8eef6",
+  boxShadow: "0 2px 16px rgba(0,0,0,0.05)",
+},
   splitView: { display: "flex", flex: 1, gap: "6px" },
   pane: {
     flex: "0 0 30%",
@@ -2095,14 +2142,15 @@ plantCardActive: {
     zIndex: 9999,
   },
 popupContent: {
-  width: "96%",      // widened
-  height: "92%",     // taller
+  width: "96%",
+  height: "92%",
   background: "white",
-  borderRadius: "12px",
-  padding: "18px",   // Slightly more padding
+  borderRadius: "16px",
+  padding: "24px",
   display: "flex",
   flexDirection: "column",
   overflowY: "auto",
+  boxShadow: "0 25px 60px rgba(0,0,0,0.2)",
 },
 
   popupHeader: {
@@ -2175,18 +2223,19 @@ modalSummaryWrapper: {
 
 summaryTable: {
   width: "100%",
-  borderCollapse: "separate",
-  borderSpacing: "0px",
+  borderCollapse: "collapse",
   marginTop: "8px",
-  fontSize: "14px",
-  textAlign: "center",
+  fontSize: "13.5px",
+  borderRadius: "10px",
+  overflow: "hidden",
 },
 
 summaryTableThTd: {
-  border: "1px solid #e5e7eb",
-  padding: "8px",
+  border: "1px solid #f0f4f8",
+  padding: "9px 12px",
   textAlign: "center",
   fontWeight: "500",
+  color: "#334155",
 },
 modal: {
   position: "absolute",
@@ -2203,16 +2252,42 @@ modal: {
 
 tableContainer: { marginTop: "8px" },
 table: { width: "100%", borderCollapse: "collapse" },
-th: { border: "1px solid #e5e7eb", padding: "6px", background: "#f1f5f9" },
-td: { border: "1px solid #e5e7eb", padding: "6px" },
+th: {
+  border: "none",
+  borderBottom: "2px solid #e2e8f0",
+  padding: "10px 12px",
+  background: "#f8fafc",
+  color: "#475569",
+  fontSize: "12px",
+  fontWeight: "700",
+  textTransform: "uppercase",
+  letterSpacing: "0.6px",
+  textAlign: "left",
+},
+td: {
+  border: "none",
+  borderBottom: "1px solid #f1f5f9",
+  padding: "10px 12px",
+  fontSize: "13px",
+  color: "#334155",
+  textAlign: "left",
+},
 chartCard: { background: "white", borderRadius: "10px", padding: "10px", marginTop: "10px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" },
 chartHeader: { marginBottom: "6px" },
 chartTitle: { fontSize: "15px", fontWeight: "600" },
 chartSubtitle: { fontSize: "12px", color: "#6b7280" },
-tableRow: { cursor: "pointer" },
-statusBadge: { borderRadius: "6px", padding: "2px 6px" },
-goodBadge: { backgroundColor: "#dcfce7", color: "#16a34a" },
-warningBadge: { backgroundColor: "#fef9c3", color: "#d97706" },
+tableRow: {
+  cursor: "pointer",
+  transition: "background 0.15s ease",
+},
+statusBadge: {
+  borderRadius: "20px",
+  padding: "3px 10px",
+  fontSize: "12px",
+  fontWeight: "700",
+},
+goodBadge: { backgroundColor: "#dcfce7", color: "#15803d" },
+warningBadge: { backgroundColor: "#fef9c3", color: "#a16207" },
 criticalBadge: { backgroundColor: "#fee2e2", color: "#dc2626" },
 
 dieWeightContainer: {
@@ -2284,49 +2359,49 @@ dieWeightTableCell: {
   textAlign: "center",
 },
 kpiCardYield: {
-  background: "linear-gradient(135deg, #d1fae5, #b3f1d3)",
-  border: "1px solid #a5e6c4",
+  background: "linear-gradient(140deg, #d1fae5 0%, #a7f3d0 100%)",
+  border: "1px solid #6ee7b7",
 },
 
 kpiCardDies: {
-  background: "linear-gradient(135deg, #f1e9ff, #e6d8ff)",
-  border: "1px solid #d8c4ff",
+  background: "linear-gradient(140deg, #ede9fe 0%, #ddd6fe 100%)",
+  border: "1px solid #c4b5fd",
 },
 
 kpiCardProd: {
-  background: "linear-gradient(135deg, #fef3c7, #fde493)",
-  border: "1px solid #f9d97b",
+  background: "linear-gradient(140deg, #fef3c7 0%, #fde68a 100%)",
+  border: "1px solid #fcd34d",
 },
 
 kpiCardRevenue: {
-  background: "linear-gradient(135deg, #ffe4e6, #fecdd5)",
-  border: "1px solid #f7b4bd",
+  background: "linear-gradient(140deg, #ffe4e6 0%, #fecdd3 100%)",
+  border: "1px solid #fca5a5",
 },
 
 masterEditBtn: {
-  background: "#dbeafe",
-  color: "#4f46e5",
-  padding: "5px 10px",
-  borderRadius: "3px",
-  border: "none",
-  fontSize: "13px",
-  fontWeight: "500",
+  background: "rgba(255,255,255,0.15)",
+  color: "white",
+  padding: "5px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.3)",
+  fontSize: "12px",
+  fontWeight: "600",
   cursor: "pointer",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+  backdropFilter: "blur(4px)",
 },
 
 kpiCardBase: {
-  borderRadius: "14px",
+  borderRadius: "16px",
   padding: "16px 18px",
-  height: "105px",
+  height: "108px",
   display: "flex",
   alignItems: "center",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.06)",
-  border: "1px solid rgba(255,255,255,0.4)",
-  backdropFilter: "blur(6px)",
-  background: "rgba(255,255,255,0.65)",   // glass-like subtle sheen
+  boxShadow: "0 2px 8px rgba(0,0,0,0.07), 0 8px 20px rgba(0,0,0,0.05)",
+  border: "1px solid rgba(255,255,255,0.7)",
   cursor: "pointer",
-  transition: "all 0.25s ease",
+  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+  position: "relative",
+  overflow: "hidden",
 },
 kpiContent: {
   display: "flex",
@@ -2337,32 +2412,33 @@ kpiContent: {
 },
 kpiLabel: {
   margin: 0,
-  fontSize: "15px",
-  fontWeight: "600",
+  fontSize: "11px",
+  fontWeight: "700",
   color: "#475569",
-  opacity: 0.75,
+  textTransform: "uppercase",
+  letterSpacing: "0.8px",
   textAlign: "center",
   whiteSpace: "nowrap",
 },
 kpiValue: {
   margin: 0,
-  fontSize: "38px",
+  fontSize: "36px",
   fontWeight: "800",
-  letterSpacing: "-1px",
+  letterSpacing: "-1.5px",
   lineHeight: "1",
   flex: 1,
 },
 kpiIcon: {
-  width: "45px",
-  height: "45px",
-  borderRadius: "10px",
+  width: "48px",
+  height: "48px",
+  borderRadius: "14px",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  fontSize: "18px",
-  boxShadow: "inset 0 0 4px rgba(0,0,0,0.08)",
-  border: "1px solid rgba(255,255,255,0.7)",
-  marginBottom: "4px",
+  fontSize: "22px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  border: "1px solid rgba(255,255,255,0.8)",
+  marginBottom: "6px",
 },
 kpiRightColumn: {
   display: "flex",
@@ -2411,11 +2487,12 @@ headerTitleCentered: {
   left: "50%",
   transform: "translateX(-50%)",
   margin: 0,
-  fontSize: "22px",
+  fontSize: "21px",
   fontWeight: "700",
-  letterSpacing: "1px",
+  letterSpacing: "0.5px",
   color: "white",
   whiteSpace: "nowrap",
+  textShadow: "0 1px 6px rgba(0,0,0,0.25)",
 },
 familyFilterSelect: {
   padding: "6px 10px",
@@ -2425,28 +2502,27 @@ familyFilterSelect: {
   background: "#ffffff",
   cursor: "pointer",
 },
-  comparisonBtn: {
-    background: "#ecfeff",
-    color: "#0f766e",
-    padding: "5px 10px",
-    borderRadius: "3px",
-    border: "none",
-    fontSize: "13px",
-    fontWeight: "500",
-    cursor: "pointer",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-  },
-  logoutBtn: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-    padding: "5px 10px",
-    borderRadius: "3px",
-    border: "none",
-    fontSize: "13px",
-    fontWeight: "500",
-    cursor: "pointer",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-  },
+comparisonBtn: {
+  background: "rgba(255,255,255,0.15)",
+  color: "white",
+  padding: "5px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(255,255,255,0.3)",
+  fontSize: "12px",
+  fontWeight: "600",
+  cursor: "pointer",
+  backdropFilter: "blur(4px)",
+},
+logoutBtn: {
+  background: "rgba(239,68,68,0.25)",
+  color: "white",
+  padding: "5px 12px",
+  borderRadius: "8px",
+  border: "1px solid rgba(239,68,68,0.4)",
+  fontSize: "12px",
+  fontWeight: "600",
+  cursor: "pointer",
+},
   headerRight: {
     position: "absolute",
     right: "10px",
@@ -2456,29 +2532,36 @@ familyFilterSelect: {
     gap: "8px",
     alignItems: "center",
   },
-  tabsContainer: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginTop: "4px"
-    },
+tabsContainer: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginTop: "4px",
+  marginBottom: "8px",
+  background: "#f1f5f9",
+  borderRadius: "12px",
+  padding: "4px 6px",
+  border: "1px solid #e2e8f0",
+},
 
     tabsLeft: {
       display: "flex",
       gap: "6px"
     },
 
-    allPlantsBtn: {
-      background: "#0ea5e9",
-      color: "white",
-      border: "none",
-      padding: "6px 14px",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontWeight: "600",
-      fontSize: "13px",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
-    },
+allPlantsBtn: {
+  background: "linear-gradient(135deg, #0ea5e9, #38bdf8)",
+  color: "white",
+  border: "none",
+  padding: "7px 16px",
+  borderRadius: "20px",
+  cursor: "pointer",
+  fontWeight: "700",
+  fontSize: "12px",
+  boxShadow: "0 3px 10px rgba(14,165,233,0.3)",
+  letterSpacing: "0.3px",
+  transition: "all 0.2s ease",
+},
 
     tabsRight: {
       display: "flex",

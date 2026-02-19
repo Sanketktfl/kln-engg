@@ -23,7 +23,7 @@ const DieWeightBar = () => {
           `die_number eq '${dieInput.trim()}'`
         );
 
-        const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
+        const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
         const resp = await fetch(url);
         const data = await resp.json();
 

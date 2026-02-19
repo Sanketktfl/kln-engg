@@ -60,7 +60,7 @@ const fetchMasterList = async (pageNo = 1) => {
     const skip = (pageNo - 1) * pageSize;
 
     const url =
-      `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data` +
+      `http://localhost:8080/api/v1/collection/kln_master_data` +
       `?$skip=${skip}&$top=${pageSize}`;
 
     const resp = await fetch(url);
@@ -110,7 +110,7 @@ const searchMasterList = async (dieNo) => {
       encodeURIComponent(`startswith(die_number,'${dieNo}')`);
 
     const url =
-      `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data` +
+      `http://localhost:8080/api/v1/collection/kln_master_data` +
       `?$filter=${filter}&$top=${pageSize}`;
 
     const resp = await fetch(url);
@@ -160,7 +160,7 @@ const cancelEdit = () => {
 
 
     try {
-      const resp = await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target");
+      const resp = await fetch("http://localhost:8080/api/v1/collection/kln_yield_target");
       const data = await resp.json();
 
       const match = data.objects.find(
@@ -209,7 +209,7 @@ const cancelEdit = () => {
       } else {
         // CREATE
         await fetch(
-          "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target",
+          "http://localhost:8080/api/v1/collection/kln_yield_target",
           {
             method: "POST",
             ...authOptions,
@@ -237,7 +237,7 @@ const cancelEdit = () => {
 
     try {
       const filter = encodeURIComponent(`die_number eq '${dieNo}'`);
-      const url = `https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data?$filter=${filter}`;
+      const url = `http://localhost:8080/api/v1/collection/kln_master_data?$filter=${filter}`;
 
       const resp = await fetch(url);
       const data = await resp.json();
@@ -328,7 +328,7 @@ const cancelEdit = () => {
     try {
         const authOptions = await getAuthHeadersWithCSRF("POST");
       const resp = await fetch(
-        "https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data",
+        "http://localhost:8080/api/v1/collection/kln_master_data",
         {
           method: "POST",
           ...authOptions,
@@ -375,7 +375,7 @@ const cancelEdit = () => {
   const getAuthHeadersWithCSRF = async (method = "GET", contentType = true) => {
     const credentials = btoa("caddok:");
     // Step 1: Trigger cookie set
-    await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_master_data", {
+    await fetch("http://localhost:8080/api/v1/collection/kln_master_data", {
       method: "GET",
       headers: {
         Authorization: `Basic ${credentials}`,
@@ -408,7 +408,7 @@ const cancelEdit = () => {
   const credentials = btoa("caddok:");
 
   // 🔹 Trigger CSRF cookie for TARGET collection
-  await fetch("https://ktflceprd.kalyanicorp.com/api/v1/collection/kln_yield_target", {
+  await fetch("http://localhost:8080/api/v1/collection/kln_yield_target", {
     method: "GET",
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -541,41 +541,46 @@ const numericFields = [
                       <p>Loading...</p>
                     ) : (
                       <>
-                        <table style={{
-                          width: "100%",
-                          borderCollapse: "collapse",
-                          marginTop: "10px"
-                        }}>
+                        <table style=
+                          {{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            marginTop: "10px"
+                          }}>
                           <thead>
                             <tr style={{ background: "#f1f5f9" }}>
                               <th style={thStyle}>Plant</th>
                               <th style={thStyle}>Die Number</th>
-                              <th style={thStyle}>Part Name</th>
                               <th style={thStyle}>Forge Press</th>
-                              <th style={thStyle}>Cycle Time</th>
-                              <th style={thStyle}>Customer</th>
+                              <th style={thStyle}>Net Weight (kg)</th>
+                              <th style={thStyle}>Gross Weight (kg)</th>
+                              <th style={thStyle}>Action</th>
                             </tr>
                           </thead>
-
                           <tbody>
-                          {masterList.map((row, i) => (
-                            <tr
-                              key={i}
-                              style={{ cursor: "pointer" }}
-                              onClick={() => {
-                                setMasterSearchNo(row.die_number);
-                                fetchMasterRecord(row.die_number);
-                              }}
-                            >
-                              <td style={tdStyle}>{row.plant_code}</td>
-                              <td style={tdStyle}>{row.die_number}</td>
-                              <td style={tdStyle}>{row.part_name}</td>
-                              <td style={tdStyle}>{row.forge_press}</td>
-                              <td style={tdStyle}>{row.cycle_time}</td>
-                              <td style={tdStyle}>{row.customer_name}</td>
-                            </tr>
-                          ))}
-                        </tbody>
+                            {masterList.map((row, i) => (
+                              <tr key={i}>
+                                <td style={tdStyle}>{row.plant_code}</td>
+                                <td style={tdStyle}>{row.die_number}</td>
+                                <td style={tdStyle}>{row.forge_press}</td>
+                                <td style={tdStyle}>{row.net_wt}</td>
+                                <td style={tdStyle}>{row.gross_wt}</td>
+
+                                {/* EDIT BUTTON */}
+                                <td style={tdStyle}>
+                                  <button
+                                    style={masterStyles.masterEditBtn}
+                                    onClick={() => {
+                                      setMasterSearchNo(row.die_number);
+                                      fetchMasterRecord(row.die_number);
+                                    }}
+                                  >
+                                    Edit
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
                         </table>
 
                         {/* PAGINATION */}
@@ -618,7 +623,27 @@ const numericFields = [
 
               {masterResult && (
                 <div style={masterStyles.masterFormCard}>
-                  <h4>Editing: Die {masterResult.die_number}</h4>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "10px"
+                  }}>
+
+                    {/* TITLE LEFT */}
+                    <h4 style={{ margin: 0 }}>
+                      Editing: Die {masterResult.die_number}
+                    </h4>
+
+                    {/* BACK BUTTON RIGHT */}
+                    <button
+                      style={masterStyles.masterBackBtn}
+                      onClick={cancelEdit}
+                    >
+                      ← Back
+                    </button>
+                  </div>
+
                   {/* ================= SECTION A - MASTER DATA ================= */}
                     <h3 style={masterStyles.masterSectionTitle}>Master Data</h3>
                     <div style={masterStyles.masterFormGrid}>
@@ -1119,6 +1144,31 @@ const masterStyles = {
     cursor: "pointer",
     fontWeight: "600",
   },
+  masterEditBtn: {
+  background: "#3b82f6",
+  color: "white",
+  padding: "5px 12px",      // smaller height
+  borderRadius: "6px",
+  border: "none",
+  fontWeight: "600",
+  fontSize: "14px",
+  cursor: "pointer",
+  boxShadow: "0 1px 4px rgba(59,130,246,0.3)",
+  transition: "all 0.15s ease",
+},
+masterEditBtnHover: {
+  background: "#2563eb",
+},
+masterBackBtn: {
+  background: "#475569",
+  color: "white",
+  padding: "5px 12px",
+  borderRadius: "6px",
+  border: "none",
+  fontWeight: "600",
+  fontSize: "14px",
+  cursor: "pointer",
+}
 
 };
 
