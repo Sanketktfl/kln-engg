@@ -1584,13 +1584,13 @@ if (isLoading) {
                       <h3 style={styles.modalSectionTitle}>Top Contributors – {selectedMonth} {selectedYear}</h3>
                       <div style={{ display: 'flex', gap: "12px", overflowX: "auto" }}>
                         <div style={styles.statItem}>
-                          <span style={styles.statLabel}>Best Yield:</span>
+                          <span style={styles.statLabel}>Best Yield : </span>
                           <span style={styles.statValue}>
                             {topYieldDie}
                           </span>
                         </div>
                         <div style={styles.statItem}>
-                          <span style={styles.statLabel}>Most Production:</span>
+                          <span style={styles.statLabel}>Most Production : </span>
                           <span style={styles.statValue}>
                               {dieMonthlyApiData.length
                                 ? [...dieMonthlyApiData].sort((a, b) => b.tonnage - a.tonnage)[0]?.die_no
@@ -1598,7 +1598,7 @@ if (isLoading) {
                           </span>
                         </div>
                         <div style={styles.statItem}>
-                          <span style={styles.statLabel}>Total Dies:</span>
+                          <span style={styles.statLabel}>Total Dies : </span>
                           <span style={styles.statValue}>
                             {dieMonthlyApiData.length}
                           </span>
